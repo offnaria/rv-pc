@@ -74,6 +74,7 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
     output wire         w_tlb_flush;    // from r_tlb_flush
 
     localparam ENABLE_ICACHE=0;
+    localparam ENABLE_DCACHE=0;
 
     /***** registers and CPU architecture state ***************************************************/
     reg  [31:0] pc                 = `D_START_PC;  // Program Counter
@@ -615,21 +616,29 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
                   (w_data_cache_odata & w_cach_wdata_mask) | (({96'h0, w_data_wdata} << {ExMem_mem_addr[3:0], 3'b0}) & ~w_cach_wdata_mask)
                   : w_data_data;
 
-    m_cache_dmap #(
-        .ADDR_WIDTH(28), // for 4-word blocks
-        .D_WIDTH(128),
-        .ENTRY(32)
-    ) data_cache (
-        .CLK(CLK),
-        .RST_X(RST_X),
-        .w_flush(w_data_cache_flush),
-        .w_we(data_cache_we),
-        .w_waddr(ExMem_mem_addr[31:4]),
-        .w_raddr(ExMem_mem_addr[31:4]),
-        .w_idata(w_data_cache_wdata),
-        .w_odata(w_data_cache_odata),
-        .w_oe(w_data_cache_hit)
-    );
+    generate
+        if (ENABLE_DCACHE) begin
+            m_cache_dmap #(
+                .ADDR_WIDTH(28), // for 4-word blocks
+                .D_WIDTH(128),
+                .ENTRY(32)
+            ) data_cache (
+                .CLK(CLK),
+                .RST_X(RST_X),
+                .w_flush(w_data_cache_flush),
+                .w_we(data_cache_we),
+                .w_waddr(ExMem_mem_addr[31:4]),
+                .w_raddr(ExMem_mem_addr[31:4]),
+                .w_idata(w_data_cache_wdata),
+                .w_odata(w_data_cache_odata),
+                .w_oe(w_data_cache_hit)
+            );
+        end else begin
+            assign w_data_cache_odata = 128'd0;
+            assign w_data_cache_hit = 1'b0;
+        end
+    endgenerate
+    
 
     wire [127:0] w_odata_t1 = (load_from_cache ?  w_data_cache_odata : w_data_data) >> {ExMem_mem_addr[3:0], 3'b0};
     wire [31:0] w_odata_t2 = (!load_from_cache & !w_is_dram_data) ? w_data_data[31:0] : w_odata_t1[31:0];
