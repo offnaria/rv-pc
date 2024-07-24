@@ -8,7 +8,7 @@ if { [info exists ::origin_dir_loc] } {
 }
 
 # Set the project name
-set _xil_proj_name_ "main"
+set _xil_proj_name_ "rv-pc"
 
 # Use project name variable, if specified in the tcl shell
 if { [info exists ::user_project_name] } {
@@ -16,7 +16,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "main.tcl"
+set script_file "create_project.tcl"
 
 # Help information for this script
 proc print_help {} {
@@ -67,7 +67,7 @@ if { $::argc > 0 } {
 set orig_proj_dir "[file normalize "$origin_dir/"]"
 
 # Create project
-create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7a100tcsg324-1
+create_project ${_xil_proj_name_} ./proj -part xc7a100tcsg324-1
 
 # Set the directory path for the new project
 set proj_dir [get_property directory [current_project]]
@@ -594,3 +594,48 @@ move_dashboard_gadget -name {drc_1} -row 2 -col 0
 move_dashboard_gadget -name {timing_1} -row 0 -col 1
 move_dashboard_gadget -name {utilization_2} -row 1 -col 1
 move_dashboard_gadget -name {methodology_1} -row 2 -col 1
+
+update_compile_order -fileset sources_1
+
+upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_0] -log ip_upgrade.log
+export_ip_user_files -of_objects [get_ips clk_wiz_0] -no_script -sync -force -quiet
+generate_target {instantiation_template} [get_ips clk_wiz_0]
+generate_target {synthesis simulation} [get_ips clk_wiz_0]
+create_ip_run [get_ips clk_wiz_0]
+launch_runs clk_wiz_0_synth_1
+
+upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_1] -log ip_upgrade.log
+export_ip_user_files -of_objects [get_ips clk_wiz_1] -no_script -sync -force -quiet
+generate_target {instantiation_template} [get_ips clk_wiz_1]
+generate_target {synthesis simulation} [get_ips clk_wiz_1]
+create_ip_run [get_ips clk_wiz_1]
+launch_runs clk_wiz_1_synth_1
+
+upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_2] -log ip_upgrade.log
+export_ip_user_files -of_objects [get_ips clk_wiz_2] -no_script -sync -force -quiet
+generate_target {instantiation_template} [get_ips clk_wiz_2]
+generate_target {synthesis simulation} [get_ips clk_wiz_2]
+create_ip_run [get_ips clk_wiz_2]
+launch_runs clk_wiz_2_synth_1
+
+upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_3] -log ip_upgrade.log
+export_ip_user_files -of_objects [get_ips clk_wiz_3] -no_script -sync -force -quiet
+generate_target {instantiation_template} [get_ips clk_wiz_3]
+generate_target {synthesis simulation} [get_ips clk_wiz_3]
+create_ip_run [get_ips clk_wiz_3]
+launch_runs clk_wiz_3_synth_1
+
+export_ip_user_files -of_objects [get_ips mig_7series_0] -no_script -sync -force -quiet
+generate_target {instantiation_template} [get_ips mig_7series_0]
+generate_target {synthesis simulation} [get_ips mig_7series_0]
+create_ip_run [get_ips mig_7series_0]
+launch_runs mig_7series_0
+launch_runs mig_7series_0_synth_1
+
+wait_on_runs clk_wiz_0_synth_1
+wait_on_runs clk_wiz_1_synth_1
+wait_on_runs clk_wiz_2_synth_1
+wait_on_runs clk_wiz_3_synth_1
+wait_on_runs mig_7series_0_synth_1
+
+exit
