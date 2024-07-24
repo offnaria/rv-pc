@@ -156,3 +156,5 @@ set_property -dict { PACKAGE_PIN G13   IOSTANDARD LVCMOS33 } [get_ports { pmod_p
 
 ##Pmod Header JB10
 set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports {ch559_rx}];
+
+set_property CLOCK_DEDICATED_ROUTE FALSE [get_nets CLK_IBUF];
