@@ -122,7 +122,6 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/sdcram.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/main.v" ]\
  [file normalize "${origin_dir}/src/sources_1/ip/mig_7series_0/mig_a.prj" ]\
- [file normalize "${origin_dir}/src/sources_1/ip/mig_7series_0/mig_b.prj" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/top.v" ]\
  [file normalize "${origin_dir}/ucimage/ucimage.mem" ]\
 ]
@@ -147,12 +146,6 @@ set_property -name "file_type" -value "Verilog Header" -objects $file_obj
 set file "mig_7series_0/mig_a.prj"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "scoped_to_cells" -value "mig_7series_0" -objects $file_obj
-
-set file "mig_7series_0/mig_b.prj"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "scoped_to_cells" -value "mig_7series_0" -objects $file_obj
-
-
 
 # Set 'sources_1' fileset properties
 set obj [get_filesets sources_1]
