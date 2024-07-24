@@ -313,7 +313,7 @@ module m_main(
         .w_ps2_mouse_data  (w_mouse_data)
     );
 
-    m_RVCoreM p(
+    m_RVCorePL_SMP p(
         .CLK            (CORE_CLK),
         .RST_X          (CORE_RST_X),
         .w_stall        (w_mc_mode == 0),

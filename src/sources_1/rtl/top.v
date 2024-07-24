@@ -159,7 +159,7 @@ module m_topsim();
         .w_debug_btnd   (1'b0)
     );
 
-    m_RVCoreM p(
+    m_RVCorePL_SMP p(
         .CLK            (CLK),
         .RST_X          (CORE_RST_X),
         .w_stall        (1'b0),
