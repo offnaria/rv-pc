@@ -102,7 +102,7 @@ module m_topsim();
 `endif
 
     /**********************************************************************************************/
-    m_mmu mmu(
+    m_interconnect interconnectmm(
         .CLK            (CLK),
         .RST_X          (RST_X),
         .w_insn_addr    (w_insn_addr),
@@ -215,10 +215,10 @@ module m_topsim();
         j=0;
 
         for(i=0;i<`MC_MEM_SIZE;i=i+4) begin
-            mmu.mc.LCMEM.mem1.mem[j]=mem_mc[i];
-            mmu.mc.LCMEM.mem2.mem[j]=mem_mc[i+1];
-            mmu.mc.LCMEM.mem3.mem[j]=mem_mc[i+2];
-            mmu.mc.LCMEM.mem4.mem[j]=mem_mc[i+3];
+            interconnect.mc.LCMEM.mem1.mem[j]=mem_mc[i];
+            interconnect.mc.LCMEM.mem2.mem[j]=mem_mc[i+1];
+            interconnect.mc.LCMEM.mem3.mem[j]=mem_mc[i+2];
+            interconnect.mc.LCMEM.mem4.mem[j]=mem_mc[i+3];
             j=j+1;
         end*/
         $write("Load image file: %s\n", `IMAGE_FILE);
@@ -227,14 +227,14 @@ module m_topsim();
         j=`BBL_SIZE;
 
         /*for(i=0;i<`DISK_SIZE;i=i+4) begin
-            mmu.idbmem.idbmem.mem1.mem[j]=mem_disk[i];
-            mmu.idbmem.idbmem.mem2.mem[j]=mem_disk[i+1];
-            mmu.idbmem.idbmem.mem3.mem[j]=mem_disk[i+2];
-            mmu.idbmem.idbmem.mem4.mem[j]=mem_disk[i+3];
+            interconnect.idbmem.idbmem.mem1.mem[j]=mem_disk[i];
+            interconnect.idbmem.idbmem.mem2.mem[j]=mem_disk[i+1];
+            interconnect.idbmem.idbmem.mem3.mem[j]=mem_disk[i+2];
+            interconnect.idbmem.idbmem.mem4.mem[j]=mem_disk[i+3];
             j=j+1;
         end*/
         for(i=0;i<`DISK_SIZE;i=i+1) begin
-            mmu.idbmem.idbmem.mem[j]=mem_disk[i];
+            interconnect.idbmem.idbmem.mem[j]=mem_disk[i];
             j=j+1;
         end
 `endif
@@ -243,14 +243,14 @@ module m_topsim();
         j=0;
 
         /*for(i=0;i<`BBL_SIZE;i=i+4) begin
-            mmu.idbmem.idbmem.mem1.mem[j]=mem_bbl[i];
-            mmu.idbmem.idbmem.mem2.mem[j]=mem_bbl[i+1];
-            mmu.idbmem.idbmem.mem3.mem[j]=mem_bbl[i+2];
-            mmu.idbmem.idbmem.mem4.mem[j]=mem_bbl[i+3];
+            interconnect.idbmem.idbmem.mem1.mem[j]=mem_bbl[i];
+            interconnect.idbmem.idbmem.mem2.mem[j]=mem_bbl[i+1];
+            interconnect.idbmem.idbmem.mem3.mem[j]=mem_bbl[i+2];
+            interconnect.idbmem.idbmem.mem4.mem[j]=mem_bbl[i+3];
             j=j+1;
         end*/
         for(i=0;i<`BBL_SIZE;i=i+1) begin
-            mmu.idbmem.idbmem.mem[j]=mem_bbl[i];
+            interconnect.idbmem.idbmem.mem[j]=mem_bbl[i];
             j=j+1;
         end
         $write("-------------------------------------------------------------------\n");
@@ -280,10 +280,10 @@ module m_topsim();
             end
             j=0;
             for(i=0;i<`BBL_SIZE;i=i+4) begin
-                $fwrite(fp,"%x\n",mmu.idbmem.mem1.mem[j]);
-                $fwrite(fp,"%x\n",mmu.idbmem.mem2.mem[j]);
-                $fwrite(fp,"%x\n",mmu.idbmem.mem3.mem[j]);
-                $fwrite(fp,"%x\n",mmu.idbmem.mem4.mem[j]);
+                $fwrite(fp,"%x\n",interconnect.idbmem.mem1.mem[j]);
+                $fwrite(fp,"%x\n",interconnect.idbmem.mem2.mem[j]);
+                $fwrite(fp,"%x\n",interconnect.idbmem.mem3.mem[j]);
+                $fwrite(fp,"%x\n",interconnect.idbmem.mem4.mem[j]);
                 j=j+1;
             end
             $fclose(fp);
@@ -316,15 +316,15 @@ module m_topsim();
             
             //TLB
             for(i=0;i<4;i=i+1) begin
-                $fwrite(fp, "%08x %08x ", (mmu.TLB_inst_r.r_valid[i]) ? {mmu.TLB_inst_r.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (mmu.TLB_inst_r.r_valid[i]) ? {mmu.TLB_inst_r.mem[i][21:0], 10'b0} : 32'hffffffff);
+                $fwrite(fp, "%08x %08x ", (interconnect.TLB_inst_r.r_valid[i]) ? {interconnect.TLB_inst_r.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (interconnect.TLB_inst_r.r_valid[i]) ? {interconnect.TLB_inst_r.mem[i][21:0], 10'b0} : 32'hffffffff);
             end
             $fwrite(fp,"\n");
             for(i=0;i<4;i=i+1) begin
-                $fwrite(fp, "%08x %08x ", (mmu.TLB_data_r.r_valid[i]) ? {mmu.TLB_data_r.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (mmu.TLB_data_r.r_valid[i]) ? {mmu.TLB_data_r.mem[i][21:0], 10'b0} : 32'hffffffff);
+                $fwrite(fp, "%08x %08x ", (interconnect.TLB_data_r.r_valid[i]) ? {interconnect.TLB_data_r.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (interconnect.TLB_data_r.r_valid[i]) ? {interconnect.TLB_data_r.mem[i][21:0], 10'b0} : 32'hffffffff);
             end
             $fwrite(fp,"\n");
             for(i=0;i<4;i=i+1) begin
-                $fwrite(fp, "%08x %08x ", (mmu.TLB_data_w.r_valid[i]) ? {mmu.TLB_data_w.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (mmu.TLB_data_w.r_valid[i]) ? {mmu.TLB_data_w.mem[i][21:0], 10'b0} : 32'hffffffff);
+                $fwrite(fp, "%08x %08x ", (interconnect.TLB_data_w.r_valid[i]) ? {interconnect.TLB_data_w.mem[i][39:22], i[1:0], 12'b0} : 32'hffffffff, (interconnect.TLB_data_w.r_valid[i]) ? {interconnect.TLB_data_w.mem[i][21:0], 10'b0} : 32'hffffffff);
             end
             $fwrite(fp,"\n");
 `endif

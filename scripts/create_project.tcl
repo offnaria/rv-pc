@@ -114,7 +114,7 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/loader.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/memory.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/microc.v" ]\
- [file normalize "${origin_dir}/src/sources_1/rtl/mmu.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/interconnect.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/mouse.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/ps2interface.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcorepl-smp.v" ]\

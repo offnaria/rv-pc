@@ -220,7 +220,7 @@ module m_main(
         if(w_init_done && !r_stop && w_led_t[9:8] == 0) r_core_cnt <= r_core_cnt + 1;
     end
 
-    m_mmu c(
+    m_interconnect c(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .clk_100mhz     (clk_100mhz),

@@ -7,7 +7,7 @@
 `include "define.vh"
 
 /**************************************************************************************************/
-module m_mmu(
+module m_interconnect(
     input  wire         CLK, clk_50mhz, clk_100mhz, RST_X,
     input  wire [31:0]  w_insn_addr, w_data_addr,
     input  wire [31:0]  w_data_wdata,
