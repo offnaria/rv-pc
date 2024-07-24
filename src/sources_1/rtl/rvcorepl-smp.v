@@ -73,6 +73,8 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
     output wire         w_data_we;      // from r_data_we, write enable for DRAM memory
     output wire         w_tlb_flush;    // from r_tlb_flush
 
+    localparam ENABLE_ICACHE=0;
+
     /***** registers and CPU architecture state ***************************************************/
     reg  [31:0] pc                 = `D_START_PC;  // Program Counter
 
@@ -252,25 +254,35 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
     wire [127:0] w_inst_cache_odata;
     wire w_inst_cache_hit;
     wire w_inst_cache_flush = tlb_flush | w_mc_mode == `MC_MODE_DISK | IdEx_op_FENCEI;
+    wire [127:0] w_instruction128;
+    wire [6:0] w_inst_offset = {pc[3:2], 5'b0};
 
-    m_cache_dmap #(
-        .ADDR_WIDTH(28), // for 4-word blocks
-        .D_WIDTH(128),
-        .ENTRY(32)
-    ) inst_cache (
-        .CLK(CLK),
-        .RST_X(RST_X),
-        .w_flush(w_inst_cache_flush),
-        .w_we(inst_cache_we),
-        .w_waddr(pc[31:4]),
-        .w_raddr(pc[31:4]),
-        .w_idata(w_insn_data),
-        .w_odata(w_inst_cache_odata),
-        .w_oe(w_inst_cache_hit)
-    );
+    generate
+        if (ENABLE_ICACHE) begin
+            m_cache_dmap #(
+                .ADDR_WIDTH(28), // for 4-word blocks
+                .D_WIDTH(128),
+                .ENTRY(32)
+            ) inst_cache (
+                .CLK(CLK),
+                .RST_X(RST_X),
+                .w_flush(w_inst_cache_flush),
+                .w_we(inst_cache_we),
+                .w_waddr(pc[31:4]),
+                .w_raddr(pc[31:4]),
+                .w_idata(w_insn_data),
+                .w_odata(w_inst_cache_odata),
+                .w_oe(w_inst_cache_hit)
+            );
+            assign w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data);
+        end else begin
+            assign w_inst_cache_odata = 128'd0;
+            assign w_inst_cache_hit = 1'b0;
+            assign w_instruction128 = w_insn_data;
+        end
+    endgenerate
 
-    wire [127:0] w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data) >> {pc[3:2], 5'b0};
-    wire [31:0]  w_instruction = w_instruction128[31:0];
+    wire [31:0]  w_instruction = w_instruction128 >> w_inst_offset;
 
     assign w_insn_addr = pc;
 
