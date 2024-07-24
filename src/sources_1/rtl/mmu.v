@@ -305,15 +305,15 @@ module m_mmu(
     wire        w_tlb_data_w_we   = (r_pw_state == 5 && !page_walk_fail && w_iswrite);
     wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
 
-    m_tlb#(20, 22, `TLB_SIZE) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
+    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
                                             w_insn_addr[31:12], w_insn_addr[31:12], w_tlb_wdata,
                                             w_tlb_inst_r_addr, w_tlb_inst_r_oe);
 
-    m_tlb#(20, 22, `TLB_SIZE) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
+    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_r_addr, w_tlb_data_r_oe);
 
-    m_tlb#(20, 22, `TLB_SIZE) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
+    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_w_addr, w_tlb_data_w_oe);
 
@@ -1104,7 +1104,7 @@ endmodule
 /**************************************************************************************************/
 /*** Simple Direct Mapped Cache for TLB                                                         ***/
 /**************************************************************************************************/
-module m_tlb#(parameter ADDR_WIDTH = 20, D_WIDTH = 20, ENTRY = 4)
+module m_cache_dmap#(parameter ADDR_WIDTH = 20, D_WIDTH = 20, ENTRY = 4)
             (CLK, RST_X, w_flush, w_we, w_waddr, w_raddr, w_idata, w_odata, w_oe);
     input  wire                     CLK, RST_X;
     input  wire                     w_flush, w_we;
@@ -1141,5 +1141,5 @@ module m_tlb#(parameter ADDR_WIDTH = 20, D_WIDTH = 20, ENTRY = 4)
             r_valid <= r_valid | w_widx_v;
         end
     end
-endmodule // m_tlb
+endmodule // m_cache_dmap
 /**************************************************************************************************/

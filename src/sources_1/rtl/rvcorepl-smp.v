@@ -253,7 +253,7 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
     wire w_inst_cache_hit;
     wire w_inst_cache_flush = tlb_flush | w_mc_mode == `MC_MODE_DISK | IdEx_op_FENCEI;
 
-    m_tlb #(
+    m_cache_dmap #(
         .ADDR_WIDTH(28), // for 4-word blocks
         .D_WIDTH(128),
         .ENTRY(32)
@@ -603,7 +603,7 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
                   (w_data_cache_odata & w_cach_wdata_mask) | (({96'h0, w_data_wdata} << {ExMem_mem_addr[3:0], 3'b0}) & ~w_cach_wdata_mask)
                   : w_data_data;
 
-    m_tlb #(
+    m_cache_dmap #(
         .ADDR_WIDTH(28), // for 4-word blocks
         .D_WIDTH(128),
         .ENTRY(32)
