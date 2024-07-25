@@ -163,29 +163,18 @@ module m_interconnect(
     wire        w_iscode;
     wire        w_isread;
     wire        w_iswrite;
-    wire [31:0] L1_pte_addr;
-    wire [31:0] L0_pte_addr;
     wire        w_pte_we;
-    wire [31:0] w_pte_waddr;
     wire [31:0] w_pte_wdata;
 
     wire [31:0] r_tlb_addr;
     wire  [2:0] r_tlb_use;
     wire        w_use_tlb;
     wire        w_tlb_hit;
-    m_mmu mmu(CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, L1_pte_addr, w_priv, w_satp, w_mstatus, L0_pte_addr, w_pte_we, w_pte_waddr, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush);
+    wire [31:0] r_tlb_pte_addr;
+    wire        r_tlb_acs;
+    m_mmu mmu(CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, r_tlb_pte_addr, r_tlb_acs);
 
     /***********************************          Memory        ***********************************/
-    reg  [31:0] r_tlb_pte_addr = 0;
-    reg         r_tlb_acs = 0;
-    always@(*)begin
-        case (r_pw_state)
-            0:      begin r_tlb_pte_addr <= L1_pte_addr;    r_tlb_acs = 1; end
-            2:      begin r_tlb_pte_addr <= L0_pte_addr;    r_tlb_acs = 1; end
-            5:      begin r_tlb_pte_addr <= w_pte_waddr;    r_tlb_acs = 1; end
-            default:begin r_tlb_pte_addr <= 0;              r_tlb_acs = 0; end
-        endcase
-    end
 
     //wire w_tlb_i_use = w_tlb_inst_r_oe && w_iscode;
     //wire w_tlb_r_use = w_tlb_data_r_oe && w_isread;

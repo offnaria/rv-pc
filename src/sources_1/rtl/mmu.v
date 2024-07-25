@@ -1,4 +1,4 @@
-module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, L1_pte_addr, w_priv, w_satp, w_mstatus, L0_pte_addr, w_pte_we, w_pte_waddr, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush);
+module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, r_tlb_pte_addr, r_tlb_acs);
     input wire CLK;
 
     input wire [1:0] w_tlb_req;
@@ -12,10 +12,7 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
     output wire w_iscode;
     output wire w_isread;
     output wire w_iswrite;
-    output wire [31:0] L1_pte_addr;
-    output wire [31:0] L0_pte_addr;
     output wire w_pte_we;
-    output wire [31:0] w_pte_waddr;
     output wire [31:0] w_pte_wdata;
     output wire [31:0] w_pagefault;
     output wire w_use_tlb;
@@ -44,7 +41,7 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
 
     // Level 1
     wire [31:0] vpn1            = {22'b0, v_addr[31:22]};
-    assign L1_pte_addr          = {w_satp[19:0], 12'b0} + {vpn1, 2'b0};
+    wire [31:0] L1_pte_addr     = {w_satp[19:0], 12'b0} + {vpn1, 2'b0};
     wire  [2:0] L1_xwr          = w_mstatus[19] ? (L1_pte[3:1] | L1_pte[5:3]) : L1_pte[3:1];
     wire [31:0] L1_paddr        = {L1_pte[29:10], 12'h0};
     wire [31:0] L1_p_addr       = {L1_paddr[31:22], v_addr[21:0]};
@@ -56,7 +53,7 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
 
     // Level 0
     wire [31:0] vpn0            = {22'b0, v_addr[21:12]};
-    assign L0_pte_addr          = {L1_pte[29:10], 12'b0} + {vpn0, 2'b0};
+    wire [31:0] L0_pte_addr     = {L1_pte[29:10], 12'b0} + {vpn0, 2'b0};
     wire  [2:0] L0_xwr          = w_mstatus[19] ? (L0_pte[3:1] | L0_pte[5:3]) : L0_pte[3:1];
     wire [31:0] L0_paddr        = {L0_pte[29:10], 12'h0};
     wire [31:0] L0_p_addr       = {L0_paddr[31:12], v_addr[11:0]};
@@ -71,8 +68,8 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
     wire [31:0] L0_pte_write    = L0_pte | `PTE_A_MASK | (w_iswrite ? `PTE_D_MASK : 0);
     assign w_pte_we             = (r_pw_state==5) && (((L1_xwr != 0 && L1_success) && L1_write) ||
                                         ((L0_xwr != 0 && L0_success) && L0_write));
-    assign w_pte_waddr     = (L1_xwr != 0 && L1_success) ? L1_pte_addr : L0_pte_addr;
-    assign w_pte_wdata     = (L1_xwr != 0 && L1_success) ? L1_pte_write : L0_pte_write;
+    wire [31:0] w_pte_waddr     = (L1_xwr != 0 && L1_success) ? L1_pte_addr : L0_pte_addr;
+    assign w_pte_wdata          = (L1_xwr != 0 && L1_success) ? L1_pte_write : L0_pte_write;
 
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
                                     (r_isread) ? `CAUSE_LOAD_PAGE_FAULT : `CAUSE_STORE_PAGE_FAULT;
@@ -179,4 +176,15 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
     m_cache_dmap#(20, 22, `TLB_SIZE) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_w_addr, w_tlb_data_w_oe);
+
+    output reg  [31:0] r_tlb_pte_addr = 0;
+    output reg         r_tlb_acs = 0;
+    always@(*)begin
+        case (r_pw_state)
+            0:      begin r_tlb_pte_addr <= L1_pte_addr;    r_tlb_acs = 1; end
+            2:      begin r_tlb_pte_addr <= L0_pte_addr;    r_tlb_acs = 1; end
+            5:      begin r_tlb_pte_addr <= w_pte_waddr;    r_tlb_acs = 1; end
+            default:begin r_tlb_pte_addr <= 0;              r_tlb_acs = 0; end
+        endcase
+    end
 endmodule
