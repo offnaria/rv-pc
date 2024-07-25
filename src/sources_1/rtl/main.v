@@ -220,7 +220,7 @@ module m_main(
         if(w_init_done && !r_stop && w_led_t[9:8] == 0) r_core_cnt <= r_core_cnt + 1;
     end
 
-    m_interconnect c(
+    m_interconnect interconnect(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .clk_100mhz     (clk_100mhz),
@@ -313,7 +313,7 @@ module m_main(
         .w_ps2_mouse_data  (w_mouse_data)
     );
 
-    m_RVCorePL_SMP p(
+    m_RVCluster cluster(
         .CLK            (CORE_CLK),
         .RST_X          (CORE_RST_X),
         .w_stall        (w_mc_mode == 0),
