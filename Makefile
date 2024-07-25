@@ -7,10 +7,11 @@ proj/rv-pc.runs/impl_1/m_main.bit: proj/rv-pc.xpr
 
 project: proj/rv-pc.xpr
 
-proj/rv-pc.xpr:
+proj/rv-pc.xpr: scripts/create_project.tcl
 	vivado -mode batch -source scripts/create_project.tcl
 
 clean:
 	rm -rf proj
 	rm -rf vivado*
 	rm -rf .Xil
+	git checkout src/sources_1/ip
