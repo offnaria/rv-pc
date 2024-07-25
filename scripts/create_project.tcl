@@ -118,6 +118,7 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/mouse.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/ps2interface.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcorepl-smp.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/rvcluster.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/sdccont.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/sdcram.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/main.v" ]\
