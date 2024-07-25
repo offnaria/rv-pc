@@ -158,21 +158,21 @@ module m_interconnect(
     wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
 
     // MMU
-    wire [2:0]  r_pw_state;
-    wire        r_tlb_busy;
+    wire [2:0]  w_pw_state;
+    wire        w_r_tlb_busy;
     wire        w_iscode;
     wire        w_isread;
     wire        w_iswrite;
     wire        w_pte_we;
     wire [31:0] w_pte_wdata;
 
-    wire [31:0] r_tlb_addr;
-    wire  [2:0] r_tlb_use;
+    wire [31:0] w_tlb_addr;
+    wire  [2:0] w_tlb_use;
     wire        w_use_tlb;
     wire        w_tlb_hit;
-    wire [31:0] r_tlb_pte_addr;
-    wire        r_tlb_acs;
-    m_mmu mmu(CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, r_tlb_pte_addr, r_tlb_acs);
+    wire [31:0] w_tlb_pte_addr;
+    wire        w_tlb_acs;
+    m_mmu mmu(CLK, w_tlb_req, w_pw_state, w_r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, w_tlb_addr, w_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, w_tlb_pte_addr, w_tlb_acs);
 
     /***********************************          Memory        ***********************************/
 
@@ -184,20 +184,20 @@ module m_interconnect(
 
 
     wire [31:0] w_insn_paddr =  (w_priv == `PRIV_M || w_satp[31] == 0) ? w_insn_addr :
-                                r_tlb_addr;
+                                w_tlb_addr;
 
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc)           ? w_mc_addr     :
-                                (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_addr   : r_tlb_addr;
-//                                (r_pw_state == 5)                       ? r_tlb_addr    :
-//                                (r_tlb_acs)                             ? r_tlb_pte_addr:
+                                (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_addr   : w_tlb_addr;
+//                                (w_pw_state == 5)                       ? w_tlb_addr    :
+//                                (w_tlb_acs)                             ? w_tlb_pte_addr:
 //                                                                          w_data_addr;
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
                                 (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_ctrl       :
-                                (r_tlb_use[1:0]!=0)                     ? w_data_ctrl       :
-                                (r_pw_state == 0)                       ? `FUNCT3_LW____    :
-                                (r_pw_state == 2)                       ? `FUNCT3_LW____    :
-                                (r_pw_state == 5)                       ? `FUNCT3_SW____    :
+                                (w_tlb_use[1:0]!=0)                     ? w_data_ctrl       :
+                                (w_pw_state == 0)                       ? `FUNCT3_LW____    :
+                                (w_pw_state == 2)                       ? `FUNCT3_LW____    :
+                                (w_pw_state == 5)                       ? `FUNCT3_SW____    :
                                 w_data_ctrl;
 
     wire  [3:0] w_dev       = w_mem_paddr[31:28];// & 32'hf0000000;
@@ -206,14 +206,14 @@ module m_interconnect(
 
     //always@(posedge CLK) w_virt <= w_mem_paddr & 32'h0f000000;
 
-    wire [31:0] w_dram_wdata    = (r_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
+    wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
     wire        w_dram_we       = (w_mem_we && !w_tlb_busy
                                     && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
 
     wire [31:0] w_dram_addr =   (w_mode_is_mc)              ? w_mc_addr         :
                                 (w_iscode && !w_tlb_busy)   ? w_insn_paddr      :
                                 (w_priv == `PRIV_M || w_satp[31] == 0) ? w_data_addr :
-                                (r_tlb_acs && !w_tlb_hit)   ? r_tlb_pte_addr    : w_mem_paddr;
+                                (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_mem_paddr;
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :
                                 (w_iscode && !w_tlb_busy)   ? `FUNCT3_LW____    : w_mem_ctrl;
@@ -226,8 +226,8 @@ module m_interconnect(
                     (!w_dram_aces) ? 0 :
                     (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
                     (w_priv == `PRIV_M || w_satp[31] == 0) ? (w_iscode || w_isread) :
-                    (r_tlb_use[2:1]!=0) ? 1 :
-                    (w_tlb_busy && !w_tlb_hit && (r_pw_state == 0 || r_pw_state==2)) ? 1 : 0;
+                    (w_tlb_use[2:1]!=0) ? 1 :
+                    (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
 
 
     /****************** RVCoreM memory map **********************
@@ -712,10 +712,10 @@ module m_interconnect(
     assign w_clint_we   = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);
 
     /***********************************           BUSY         ***********************************/
-    assign w_tlb_busy = //w_use_tlb & r_pw_state != 7
+    assign w_tlb_busy = //w_use_tlb & w_pw_state != 7
                     !(w_use_tlb)                            ? 0 :
-                    (r_pw_state == 7)                       ? 0 : 1;
-/*                    (r_pw_state != 0)                       ? 1 :
+                    (w_pw_state == 7)                       ? 0 : 1;
+/*                    (w_pw_state != 0)                       ? 1 :
                     ((w_iscode && w_tlb_inst_r_oe) ||
                     (w_isread && w_tlb_data_r_oe)  ||
                     (w_iswrite && w_tlb_data_w_oe))         ? 0 : 1;*/
@@ -726,7 +726,7 @@ module m_interconnect(
 
 
     wire w_tx_ready;
-    assign w_proc_busy = r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
+    assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
     /**********************************************************************************************/
     // PLIC, CLINT ACCESS
     reg         r_uart_we = 0;
