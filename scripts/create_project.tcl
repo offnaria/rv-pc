@@ -119,11 +119,12 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/ps2interface.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcluster.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcorepl-smp.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/rvcluster.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/sdccont.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/sdcram.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/main.v" ]\
  [file normalize "${origin_dir}/src/sources_1/ip/mig_7series_0/mig_a.prj" ]\
- [file normalize "${origin_dir}/src/sources_1/ip/mmu.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/mmu.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/top.v" ]\
  [file normalize "${origin_dir}/ucimage/ucimage.mem" ]\
 ]
