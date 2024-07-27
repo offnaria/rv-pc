@@ -4,3 +4,6 @@
 [submodule "diskimage/riscv-pk-v1.0.0"]
 	path = diskimage/riscv-pk-v1.0.0
 	url = https://github.com/riscv-software-src/riscv-pk.git
+[submodule "diskimage/buildroot-2019.11.3"]
+	path = diskimage/buildroot-2019.11.3
+	url = https://git.busybox.net/buildroot
