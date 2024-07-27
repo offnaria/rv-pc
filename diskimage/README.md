@@ -39,4 +39,10 @@ make vmlinux
 > [!NOTE]
 > The `vmlinux` rule attaches a patch file, which is created to make the build process possible with a newer version of riscv-gnu-toolchain (e.g. 2024.04.12).
 
+## Build BBL
 
+You can simply build BBL (Berkeley Boot Loader) by tiping the following command in this directory.
+
+```
+make bbl
+```
