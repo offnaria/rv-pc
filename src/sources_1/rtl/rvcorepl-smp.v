@@ -38,7 +38,10 @@ endmodule
 /**************************************************************************************************/
 /***** main processor                                                                         *****/
 /**************************************************************************************************/
-module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_insn_data, w_data_data, w_is_dram_data,
+module m_RVCorePL_SMP#(
+    parameter MHARTID = 0
+)
+(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_insn_data, w_data_data, w_is_dram_data,
                     w_data_wdata, w_data_we, w_data_ctrl, w_priv, w_satp, w_mstatus, w_mtime, w_mc_mode,
                     w_mtimecmp, w_wmtimecmp, w_clint_we, w_mip, w_wmip, w_plic_we, w_busy, w_pagefault,
                     w_tlb_req, w_tlb_flush, w_core_pc, w_core_ir, w_core_odata, w_init_stage);
@@ -85,7 +88,7 @@ module m_RVCorePL_SMP(CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_i
     reg  [31:0] mepc               = 0;            //
     reg  [31:0] mcause             = 0;            //
     reg  [31:0] mtval              = 0;            //
-    reg  [31:0] mhartid            = 0;            //
+    reg  [31:0] mhartid            = MHARTID;      //
     reg  [31:0] misa               = 32'h00141105; // RV32acim, Machine ISA register (MISA)
     reg  [31:0] mie                = 0;            //
     reg  [31:0] mip                = 0;            //

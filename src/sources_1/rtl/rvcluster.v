@@ -33,7 +33,10 @@ module m_RVCluster (
     output wire         w_tlb_flush     // from r_tlb_flush
 );
 
-    m_RVCorePL_SMP core0(
+    m_RVCorePL_SMP #(
+        .MHARTID(0)
+    )
+    core0(
         .CLK(CLK),
         .RST_X(RST_X),
         .w_stall(w_stall),
