@@ -14,7 +14,7 @@ sudo make -j$(nproc) linux
 
 > [NOTE!]
 > CSR related instructions and fence instructions has to be splitted from baseline ISA, zicsr and zifencei are corresponding sub-extension.
-> (Quoted from riscvarchive/riscv-gcc@b03be74 .)
+> (Quoted from [riscvarchive/riscv-gcc@b03be74](https://github.com/riscvarchive/riscv-gcc/commit/b03be74).)
 
 Then, add the `bin` directory to the PATH.
 
