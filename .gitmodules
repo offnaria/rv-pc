@@ -1,3 +1,6 @@
 [submodule "diskimage/linux-v5.0"]
 	path = diskimage/linux-v5.0
 	url = https://github.com/torvalds/linux.git
+[submodule "diskimage/riscv-pk-v1.0.0"]
+	path = diskimage/riscv-pk-v1.0.0
+	url = https://github.com/riscv-software-src/riscv-pk.git
