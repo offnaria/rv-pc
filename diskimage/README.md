@@ -12,7 +12,7 @@ cd riscv-gnu-toolchain
 sudo make -j$(nproc) linux
 ```
 
-> [NOTE!]
+> [!NOTE]
 > CSR related instructions and fence instructions has to be splitted from baseline ISA, zicsr and zifencei are corresponding sub-extension.
 > (Quoted from [riscvarchive/riscv-gcc@b03be74](https://github.com/riscvarchive/riscv-gcc/commit/b03be74).)
 
@@ -36,7 +36,7 @@ You can simply build the linux kernel by tiping the following command in this di
 make vmlinux
 ```
 
-> [NOTE!]
+> [!NOTE]
 > The `vmlinux` rule attaches a patch file, which is created to make the build process possible with a newer version of riscv-gnu-toolchain (e.g. 2024.04.12).
 
 
