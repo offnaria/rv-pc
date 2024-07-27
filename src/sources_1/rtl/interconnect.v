@@ -172,7 +172,35 @@ module m_interconnect(
     wire        w_tlb_hit;
     wire [31:0] w_tlb_pte_addr;
     wire        w_tlb_acs;
-    m_mmu mmu(CLK, w_tlb_req, w_pw_state, w_r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, w_tlb_addr, w_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, w_tlb_pte_addr, w_tlb_acs);
+    // m_mmu mmu(CLK, w_tlb_req, w_pw_state, w_r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, w_tlb_addr, w_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, w_tlb_pte_addr, w_tlb_acs);
+
+    m_mmu  mmu (
+        .CLK(CLK),
+        .w_tlb_req(w_tlb_req),
+        .w_insn_addr(w_insn_addr),
+        .w_data_addr(w_data_addr),
+        .w_priv(w_priv),
+        .w_satp(w_satp),
+        .w_mstatus(w_mstatus),
+        .w_dram_busy(w_dram_busy),
+        .w_dram_odata(w_dram_odata),
+        .w_tlb_flush(w_tlb_flush),
+        .w_mode_is_cpu(w_mode_is_cpu),
+        .w_iscode(w_iscode),
+        .w_isread(w_isread),
+        .w_iswrite(w_iswrite),
+        .w_pte_we(w_pte_we),
+        .w_pte_wdata(w_pte_wdata),
+        .w_pagefault(w_pagefault),
+        .w_use_tlb(w_use_tlb),
+        .w_tlb_hit(w_tlb_hit),
+        .w_pw_state(w_pw_state),
+        .w_tlb_busy(w_r_tlb_busy),
+        .w_tlb_addr(w_tlb_addr),
+        .w_tlb_use(w_tlb_use),
+        .w_tlb_pte_addr(w_tlb_pte_addr),
+        .w_tlb_acs(w_tlb_acs)
+);
 
     /***********************************          Memory        ***********************************/
 

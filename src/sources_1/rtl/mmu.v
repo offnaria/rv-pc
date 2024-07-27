@@ -1,30 +1,41 @@
-module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, r_tlb_addr, r_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, r_tlb_pte_addr, r_tlb_acs);
-    input wire CLK;
+module m_mmu (
+    input wire        CLK,
+    input wire  [1:0] w_tlb_req,
+    input wire [31:0] w_insn_addr,
+    input wire [31:0] w_data_addr,
+    input wire [31:0] w_priv,
+    input wire [31:0] w_satp,
+    input wire [31:0] w_mstatus,
+    input wire        w_dram_busy,
+    input wire [31:0] w_dram_odata,
+    input wire        w_tlb_flush,
+    input wire        w_mode_is_cpu,
 
-    input wire [1:0] w_tlb_req;
-    input  wire [31:0]  w_insn_addr, w_data_addr;
-    input  wire [31:0]  w_priv, w_satp, w_mstatus;
-    input wire w_dram_busy;
-    input wire [31:0] w_dram_odata;
-    input wire w_tlb_flush;
-    input wire w_mode_is_cpu;
-
-    output wire w_iscode;
-    output wire w_isread;
-    output wire w_iswrite;
-    output wire w_pte_we;
-    output wire [31:0] w_pte_wdata;
-    output wire [31:0] w_pagefault;
-    output wire w_use_tlb;
-    output wire w_tlb_hit;
+    output wire        w_iscode,
+    output wire        w_isread,
+    output wire        w_iswrite,
+    output wire        w_pte_we,
+    output wire [31:0] w_pte_wdata,
+    output wire [31:0] w_pagefault,
+    output wire        w_use_tlb,
+    output wire        w_tlb_hit,
+    output wire  [2:0] w_pw_state,
+    output wire        w_tlb_busy,
+    output wire [31:0] w_tlb_addr,
+    output wire  [2:0] w_tlb_use,
+    output wire [31:0] w_tlb_pte_addr,
+    output wire        w_tlb_acs
+);
 
     /***** Address translation ********************************************************************/
     reg  [31:0] physical_addr       = 0;
     reg         page_walk_fail      = 0;
 
     // Page walk state
-    output reg  [2:0]  r_pw_state   = 0;
-    output reg         r_tlb_busy   = 0;
+    reg  [2:0]  r_pw_state   = 0;
+    reg         r_tlb_busy   = 0;
+    assign w_pw_state = r_pw_state;
+    assign w_tlb_busy = r_tlb_busy;
 
     // Page table entry
     reg  [31:0] L1_pte              = 0;
@@ -74,8 +85,10 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
                                     (r_isread) ? `CAUSE_LOAD_PAGE_FAULT : `CAUSE_STORE_PAGE_FAULT;
 
-    output reg  [31:0] r_tlb_addr = 0;
-    output reg   [2:0] r_tlb_use  = 0;
+    reg  [31:0] r_tlb_addr = 0;
+    reg   [2:0] r_tlb_use  = 0;
+    assign w_tlb_addr = r_tlb_addr;
+    assign w_tlb_use  = r_tlb_use;
     wire [21:0] w_tlb_inst_r_addr, w_tlb_data_r_addr, w_tlb_data_w_addr;
     wire        w_tlb_inst_r_oe, w_tlb_data_r_oe, w_tlb_data_w_oe;
     assign w_use_tlb = (w_mode_is_cpu && (w_iscode || w_isread || w_iswrite)
@@ -177,8 +190,10 @@ module m_mmu (CLK, w_tlb_req, r_pw_state, r_tlb_busy, w_iscode, w_isread, w_iswr
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_w_addr, w_tlb_data_w_oe);
 
-    output reg  [31:0] r_tlb_pte_addr = 0;
-    output reg         r_tlb_acs = 0;
+    reg  [31:0] r_tlb_pte_addr = 0;
+    reg         r_tlb_acs = 0;
+    assign w_tlb_pte_addr = r_tlb_pte_addr;
+    assign w_tlb_acs      = r_tlb_acs;
     always@(*)begin
         case (r_pw_state)
             0:      begin r_tlb_pte_addr <= L1_pte_addr;    r_tlb_acs = 1; end
