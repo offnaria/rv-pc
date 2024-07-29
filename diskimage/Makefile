@@ -10,8 +10,20 @@ TRIPLE := riscv32-unknown-linux-gnu
 
 PATCH_DIR      := rvpc_patch
 DEVICETREE_DIR := devicetree
+INITMEMGEN_DIR := initmem_gen
 
 NPARALLEL ?= $(shell nproc)
+
+# Memory initialization data
+
+.PHONY: initmem
+initmem: $(INITMEMGEN_DIR)/initmem.bin
+
+$(INITMEMGEN_DIR)/initmem.bin: $(INITMEMGEN_DIR)/initmem_gen $(RISCVPK_DIR)/build/bbl.bin $(BUILDROOT_DIR)/output/images/rootfs.ext4 $(DEVICETREE_DIR)/devicetree.dtb
+	$^
+
+$(INITMEMGEN_DIR)/initmem_gen: $(INITMEMGEN_DIR)/main.c $(INITMEMGEN_DIR)/Makefile
+	make -C $(INITMEMGEN_DIR)
 
 # Device tree
 

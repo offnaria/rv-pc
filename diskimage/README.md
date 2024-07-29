@@ -62,3 +62,12 @@ You can simply build device tree by typing the following command in this directo
 ```
 make dtb
 ```
+
+## Generate memory initialization data
+
+You can simply generate the memory initialization data (`initmem.bin`) by typing the following command in this directory.
+
+```
+make initmem
+```
+
