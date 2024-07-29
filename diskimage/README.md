@@ -54,3 +54,11 @@ make bbl
 ```
 make buildroot
 ```
+
+## Build device tree
+
+You can simply build device tree by typing the following command in this directory.
+
+```
+make dtb
+```
