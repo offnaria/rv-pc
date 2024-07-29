@@ -8,9 +8,18 @@ BUILDROOT_DIR := buildroot-$(BUILDROOT_VERSION)
 
 TRIPLE := riscv32-unknown-linux-gnu
 
-PATCH_DIR := rvpc_patch
+PATCH_DIR      := rvpc_patch
+DEVICETREE_DIR := devicetree
 
 NPARALLEL ?= $(shell nproc)
+
+# Device tree
+
+.PHONY: dtb
+dtb: $(DEVICETREE_DIR)/devicetree.dtb
+
+$(DEVICETREE_DIR)/devicetree.dtb:
+	dtc -I dts -O dtb $(dir $@)/devicetree_75mhz.dts -o $@
 
 # buildroot
 
