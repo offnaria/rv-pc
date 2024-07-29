@@ -46,3 +46,11 @@ You can simply build BBL (Berkeley Boot Loader) by tiping the following command 
 ```
 make bbl
 ```
+
+## Build buildroot
+
+**This part is updated later. The following instruction is tentative.**
+
+```
+make buildroot
+```

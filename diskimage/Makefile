@@ -1,14 +1,30 @@
-LINUX_VERSION   := v5.0
-RISCVPK_VERSION := v1.0.0
+LINUX_VERSION     := v5.0
+RISCVPK_VERSION   := v1.0.0
+BUILDROOT_VERSION := 2019.11.3
 
-LINUX_DIR    := linux-$(LINUX_VERSION)
-RISCVPK_DIR  := riscv-pk-$(RISCVPK_VERSION)
+LINUX_DIR     := linux-$(LINUX_VERSION)
+RISCVPK_DIR   := riscv-pk-$(RISCVPK_VERSION)
+BUILDROOT_DIR := buildroot-$(BUILDROOT_VERSION)
 
 TRIPLE := riscv32-unknown-linux-gnu
 
 PATCH_DIR := rvpc_patch
 
 NPARALLEL ?= $(shell nproc)
+
+# buildroot
+
+.PHONY: buildroot
+buildroot: $(BUILDROOT_DIR)/output/images/rootfs.ext4
+
+$(BUILDROOT_DIR)/output/images/rootfs.ext4:
+#	patch -d $(BUILD_DIR) -p1 -N < $(PATCH_DIR)/buildroot.patch || true
+	cp $(PATCH_DIR)/rv32ima_buildroot_config $(BUILDROOT_DIR)/.config
+	cp -r $(PATCH_DIR)/overlay $(BUILDROOT_DIR)/
+#	unset LD_LIBRARY_PATH
+	make -C $(BUILDROOT_DIR) -j$(NPARALLEL)
+
+# BBL
 
 .PHONY: bbl
 bbl: $(RISCVPK_DIR)/build/bbl.bin
