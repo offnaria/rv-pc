@@ -14,6 +14,9 @@ INITMEMGEN_DIR := initmem_gen
 
 NPARALLEL ?= $(shell nproc)
 
+.PHONY: all
+all: initmem
+
 # Memory initialization data
 
 .PHONY: initmem

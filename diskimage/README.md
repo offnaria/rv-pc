@@ -28,7 +28,17 @@ Finally, retrieve submodules of this repository.
 git submodule update --init --recursive
 ```
 
-## Build Linux kernel
+## How to create the memory image
+
+You can create the memory image of RV-PC by typing the following command in this directory.
+
+```
+make
+```
+
+The following sections list up what is done internally. You don't need to do them.
+
+### Build Linux kernel
 
 You can simply build the linux kernel by tiping the following command in this directory.
 
@@ -39,7 +49,7 @@ make vmlinux
 > [!NOTE]
 > The `vmlinux` rule attaches a patch file, which is created to make the build process possible with a newer version of riscv-gnu-toolchain (e.g. 2024.04.12).
 
-## Build BBL
+### Build BBL
 
 You can simply build BBL (Berkeley Boot Loader) by tiping the following command in this directory.
 
@@ -47,7 +57,7 @@ You can simply build BBL (Berkeley Boot Loader) by tiping the following command 
 make bbl
 ```
 
-## Build buildroot
+### Build buildroot
 
 **This part is updated later. The following instruction is tentative.**
 
@@ -55,7 +65,7 @@ make bbl
 make buildroot
 ```
 
-## Build device tree
+### Build device tree
 
 You can simply build device tree by typing the following command in this directory.
 
@@ -63,7 +73,7 @@ You can simply build device tree by typing the following command in this directo
 make dtb
 ```
 
-## Generate memory initialization data
+### Generate memory initialization data
 
 You can simply generate the memory initialization data (`initmem.bin`) by typing the following command in this directory.
 
