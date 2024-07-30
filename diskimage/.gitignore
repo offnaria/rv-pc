@@ -1,0 +1,4 @@
+devicetree/devicetree.dtb
+initmem_gen/initmem_gen
+initmem_gen/*.o
+initmem.bin
