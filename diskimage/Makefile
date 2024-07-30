@@ -75,7 +75,7 @@ $(LINUX_DIR)/vmlinux:
 	patch -d $(LINUX_DIR) -p1 -N < $(PATCH_DIR)/linux.patch || true
 	make -C $(LINUX_DIR) mrproper
 	make -C $(LINUX_DIR) ARCH=riscv CROSS_COMPILE=$(TRIPLE)- defconfig
-	cp $(PATCH_DIR)/rv32ima_kernel_config $(LINUX_DIR)/.config
+	cp $(PATCH_DIR)/rv32ima_kernel_config.smp $(LINUX_DIR)/.config
 	make -C $(LINUX_DIR) -j$(NPARALLEL) V=1 ARCH=riscv CROSS_COMPILE=$(TRIPLE)- vmlinux
 
 .PHONY: clean
