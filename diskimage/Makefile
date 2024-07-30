@@ -39,7 +39,7 @@ $(DEVICETREE_DIR)/devicetree.dtb:
 buildroot: $(BUILDROOT_DIR)/output/images/rootfs.ext4
 
 $(BUILDROOT_DIR)/output/images/rootfs.ext4:
-#	patch -d $(BUILD_DIR) -p1 -N < $(PATCH_DIR)/buildroot.patch || true
+	patch -d $(BUILDROOT_DIR) -p1 -N < $(PATCH_DIR)/buildroot.patch || true
 	cp $(PATCH_DIR)/rv32ima_buildroot_config $(BUILDROOT_DIR)/.config
 	cp -r $(PATCH_DIR)/overlay $(BUILDROOT_DIR)/
 #	unset LD_LIBRARY_PATH
