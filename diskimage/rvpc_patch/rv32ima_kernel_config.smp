@@ -4,10 +4,10 @@
 #
 
 #
-# Compiler: gcc (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+# Compiler: riscv32-unknown-linux-gnu-gcc (gc891d8dc23e) 13.2.0
 #
 CONFIG_CC_IS_GCC=y
-CONFIG_GCC_VERSION=110400
+CONFIG_GCC_VERSION=130200
 CONFIG_CLANG_VERSION=0
 CONFIG_CC_HAS_ASM_GOTO=y
 CONFIG_IRQ_WORK=y
