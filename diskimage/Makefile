@@ -33,8 +33,8 @@ $(INITMEMGEN_DIR)/initmem_gen: $(INITMEMGEN_DIR)/main.c $(INITMEMGEN_DIR)/Makefi
 .PHONY: dtb
 dtb: $(DEVICETREE_DIR)/devicetree.dtb
 
-$(DEVICETREE_DIR)/devicetree.dtb:
-	dtc -I dts -O dtb $(dir $@)/devicetree_75mhz.dts -o $@
+$(DEVICETREE_DIR)/devicetree.dtb: $(DEVICETREE_DIR)/devicetree_75mhz.dts
+	dtc -I dts -O dtb $< -o $@
 
 # buildroot
 
