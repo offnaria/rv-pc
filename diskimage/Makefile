@@ -12,6 +12,13 @@ PATCH_DIR      := rvpc_patch
 DEVICETREE_DIR := devicetree
 INITMEMGEN_DIR := initmem_gen
 
+SMP ?= 1
+
+KCONFIG := $(PATCH_DIR)/rv32ima_kernel_config
+ifeq ($(SMP), 1)
+KCONFIG := $(KCONFIG).smp
+endif
+
 NPARALLEL ?= $(shell nproc)
 
 .PHONY: all
@@ -76,7 +83,7 @@ $(LINUX_DIR)/vmlinux:
 	make -C $(LINUX_DIR) mrproper
 #	make -C $(LINUX_DIR) ARCH=riscv CROSS_COMPILE=$(TRIPLE)- defconfig
 #	cp $(PATCH_DIR)/rv32ima_kernel_config.smp $(LINUX_DIR)/.config
-	make -C $(LINUX_DIR) -j$(NPARALLEL) V=1 ARCH=riscv CROSS_COMPILE=$(TRIPLE)- KCONFIG_CONFIG=../$(PATCH_DIR)/rv32ima_kernel_config.smp vmlinux
+	make -C $(LINUX_DIR) -j$(NPARALLEL) V=1 ARCH=riscv CROSS_COMPILE=$(TRIPLE)- KCONFIG_CONFIG=../$(KCONFIG) vmlinux
 
 .PHONY: clean
 
