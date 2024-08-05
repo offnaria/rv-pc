@@ -851,7 +851,7 @@ module m_interconnect(
     reg          r_dtree_done = 0;
     reg          r_disk_done  = 1;
     reg  [31:0]  r_initaddr  = 0;
-    reg  [31:0]  r_initaddr3 = (16*1024*1024); /* initial address of Device Tree */
+    reg  [31:0]  r_initaddr3 = (`BIN_DTB_START); /* initial address of Device Tree */
 
     // Zero init
     wire w_zero_we;
@@ -878,10 +878,10 @@ module m_interconnect(
     assign w_init_done = (r_init_state == 4);
 
     always@(posedge CLK) begin
-        if(w_pl_init_we & (r_init_state == 2))      r_initaddr      <= r_initaddr + 4;
-        if(r_initaddr  >= (9*1024*1024))            r_bbl_done      <= 1;
-        if(w_pl_init_we & (r_init_state == 3))      r_initaddr3     <= r_initaddr3 + 4;
-        if(r_initaddr3 >= (16*1024*1024 + 4*1024))  r_dtree_done    <= 1;
+        if(w_pl_init_we & (r_init_state == 2))              r_initaddr      <= r_initaddr + 4;
+        if(r_initaddr  >= (`BIN_BBL_SIZE - `BIN_DTB_SIZE))  r_bbl_done      <= 1;
+        if(w_pl_init_we & (r_init_state == 3))              r_initaddr3     <= r_initaddr3 + 4;
+        if(r_initaddr3 >= (`BIN_DTB_START + `BIN_DTB_SIZE)) r_dtree_done    <= 1;
     end
 
     // Zero init

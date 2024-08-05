@@ -11,7 +11,7 @@
 `define HEXFILE "template-asm2.hex"
 `define INST_HEX "inst-template-asm2.hex"
 
-`define CACHE_SIZE (128*1024)
+`define CACHE_SIZE (64*1024)
 
 `define SERIAL_WCNT 15 // 1M baud UART wait count, 8 for 64MHz, 9 for 72MHz
 
@@ -149,8 +149,11 @@
 `define MC_MEM_SIZE 8*1024    // 32KB
 
 `define BBL_SIZE 64*1024*1024
-`define BIN_BBL_SIZE  (9*1024*1024 + 4*1024) // Note!!
+// `define BIN_BBL_SIZE  (9*1024*1024 + 4*1024) // Note!!
 //`define BIN_BBL_SIZE  (16*1024*1024 + 4*1024)
+`define BIN_BBL_SIZE  (12*1024*1024 + 4*1024)
+`define BIN_DTB_START (16*1024*1024)
+`define BIN_DTB_SIZE  (4*1024)
 `define BIN_DISK_SIZE (32*1024*1024)
 `define BIN_SIZE      (`BIN_BBL_SIZE+`BIN_DISK_SIZE)
 
