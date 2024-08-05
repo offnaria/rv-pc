@@ -1297,7 +1297,7 @@ module m_RVCorePL_SMP#(
     /**********************************************************************************************/
     initial r_halt = 0;
 
-    assign w_core_pc = pc;
+    assign w_core_pc = IfId_pc;
     assign w_core_ir = IfId_ir;
     assign w_core_odata = inst_cnt;
 endmodule
