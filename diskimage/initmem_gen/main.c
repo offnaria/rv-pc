@@ -13,7 +13,8 @@ void load_binfile(char *fname, uint8_t *mem);
 #define D_INITD_ADDR (16*1024*1024) // after 16MB area, write the init data
 //#define D_INITD_ADDR (0x01000000)
 
-#define D_SIZE_DRAM ( 9*1024*1024) //  9MB of bbl + kernel
+// #define D_SIZE_DRAM ( 9*1024*1024) //  9MB of bbl + kernel
+#define D_SIZE_DRAM (12*1024*1024) // 12MB of bbl + kernel
 #define D_SIZE_DEVT ( 4*1024)      //  4KB of device tree
 #define D_SIZE_DISK (128*1024*1024) // 128MB of disk image
 
