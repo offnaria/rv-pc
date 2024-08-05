@@ -8,7 +8,7 @@
 
 /**** DRAM Main Memory module for implementation                                               ****/
 /**************************************************************************************************/
-`ifndef SIM_MODE
+`ifdef SYNTHESIS
 /**** DRAM Controller with Cache                                                               ****/
 /**************************************************************************************************/
 module DRAM_con#(
@@ -842,7 +842,7 @@ module m_col_bram#(parameter WIDTH=32, ENTRY=256)(CLK, w_we, w_addr, w_idata, w_
     assign w_odata = mem[addr];
 endmodule
 /**************************************************************************************************/
-`ifndef SIM_MODE
+`ifdef SYNTHESIS
 module AsyncFIFO #(
 			       parameter DATA_WIDTH  = 512,
 			       parameter ADDR_WIDTH  = 8) // FIFO_DEPTH = 2^ADDR_WIDTH

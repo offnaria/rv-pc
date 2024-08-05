@@ -874,7 +874,7 @@ module m_RVCorePL_SMP#(
             `CSR_MINSTRET   : r_rcsr_t = mtime[31:0];
             `CSR_CYCLE      : r_rcsr_t = mtime[31:0];
             `CSR_INSTRET    : r_rcsr_t = mtime[31:0];
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
             `CSR_TIME       : r_rcsr_t = mtime[31:0]+ !IdEx_flushed + !ExMem_flushed + !MemWb_flushed;
 `else
             `CSR_TIME       : r_rcsr_t = mtime[31:0];

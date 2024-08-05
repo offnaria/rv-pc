@@ -121,7 +121,7 @@ module m_interconnect(
     reg   [3:0] r_consf_tail        = 0;  // Note!!
     reg   [4:0] r_consf_cnts        = 0;  // Note!!
     reg         r_consf_en;
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
     initial #1  r_consf_en <= 1;
 `else
     initial #1  r_consf_en <= 0;
@@ -551,7 +551,7 @@ module m_interconnect(
             r_mc_mode <= `MC_MODE_CPU;
             r_mc_done <= 0;
             if(r_mc_mode==`MC_MODE_KEY) begin
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
                 r_consf_en <= 1;
                 r_consf_head <= (r_consf_head < 8) ? r_consf_head + 1 : r_consf_head;
 `else
@@ -859,7 +859,7 @@ module m_interconnect(
     reg  r_zero_done        = 1;
     reg  [31:0]  r_zeroaddr = 0;
 
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
     reg  [2:0] r_init_state = 4;
 `else
     reg  [2:0] r_init_state = 0;
@@ -894,7 +894,7 @@ module m_interconnect(
         if(r_zeroaddr >= `MEM_SIZE) r_zero_done <= 1;
     end
 
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
     assign w_zero_we = 0;
 `else
     assign w_zero_we = r_zero_we;
@@ -932,7 +932,7 @@ module m_interconnect(
 
 /**************************************************************************************************/
 
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
     m_dram_sim#(`MEM_SIZE) idbmem(CLK, w_dram_addr_t2, w_dram_odata, w_dram_we_t, w_dram_le,
                                     w_dram_wdata_t, w_dram_ctrl_t, w_dram_busy, w_mtime[31:0]);
 `else

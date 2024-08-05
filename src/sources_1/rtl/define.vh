@@ -30,7 +30,6 @@
 //`define CONSOLE_MEM "/home/pub/riscv/data_vefify/cons-test-initmem.txt"
 /**************************************************************************************************/
 //`define USE_UART
-//`define SIM_MODE
 /**************************************************************************************************/
 `ifdef LINUX
     `undef HEX_DIR
@@ -193,7 +192,7 @@
 `define MEMORY_DATA_WIDTH 1 // 1 Byte
 `define I_CACHE_SIZE 4096 // 4KB
 `define D_CACHE_SIZE 4096 // 4KB
-`ifdef SIM_MODE
+`ifndef SYNTHESIS
 `define TLB_SIZE 4
 `else
 `define TLB_SIZE 32
