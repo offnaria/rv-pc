@@ -376,17 +376,6 @@ module m_main(
                                             (w_priv == `PRIV_S) ? 3'b010 :
                                             (w_priv == `PRIV_M) ? 3'b100 : 0;
 
-    ila_0 ila_00 (
-        .clk(cluster.core0.CLK), // input wire clk
-
-
-        .probe0(cluster.core0.IdEx_pc), // input wire [31:0]  probe0  
-        .probe1(cluster.core0.IdEx_ir), // input wire [31:0]  probe1 
-        .probe2(cluster.core0.w_alu_in1), // input wire [31:0]  probe2 
-        .probe3(cluster.core0.w_alu_in2), // input wire [31:0]  probe3 
-        .probe4(cluster.core0.w_alu_b_rslt), // input wire [0:0]  probe4
-        .probe5(cluster.core0.w_core_pc)
-    );
 endmodule
 
 /**************************************************************************************************/
