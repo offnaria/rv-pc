@@ -285,11 +285,6 @@ module m_main(
         .w_rxd_phy      (w_rxd_phy),
         .w_rxerr_phy    (w_rxerr_phy),
         .w_clkin_phy    (w_clkin_phy),
-        .sd_cd          (sd_cd),
-        .sd_rst         (sd_rst),
-        .sd_sclk        (sd_sclk),
-        .sd_cmd         (sd_cmd),
-    	.sd_dat         (sd_dat),
         .vga_red        (vga_red),
         .vga_green      (vga_green),
         .vga_blue       (vga_blue),
@@ -310,7 +305,14 @@ module m_main(
         .w_ps2_kbd_we   (w_kbd_we),
         .w_ps2_kbd_data (w_kbd_data),
         .w_ps2_mouse_we (w_mouse_we),
-        .w_ps2_mouse_data  (w_mouse_data)
+        .w_ps2_mouse_data  (w_mouse_data),
+        // SD card controller
+        .loader_addr    (loader_addr),
+        .loader_data    (loader_data),
+        .loader_we      (loader_we),
+        .loader_done    (loader_done),
+        .sdctrl_rdata   (sdctrl_rdata),
+        .sdctrl_busy    (sdctrl_busy)
     );
 
     m_RVCluster cluster(
@@ -344,6 +346,35 @@ module m_main(
         .w_init_stage   (w_init_stage)
     );
 
+    /***********************************         SD Card       ***********************************/
+    wire [31:0] loader_addr;
+    wire [31:0] loader_data;
+    wire        loader_we;
+    wire        loader_done;
+    wire [31:0] sdctrl_rdata;
+    wire        sdctrl_busy;
+    periph_sdcard periph_sdcard(
+        .CLK         (CORE_CLK),
+        .RST_X       (RST_X),
+        .loader_addr (loader_addr),
+        .loader_data (loader_data),
+        .loader_we   (loader_we),
+        .loader_done (loader_done),
+        .w_dram_busy (w_dram_busy),
+        .clk_50mhz   (clk_50mhz),
+        .sd_cd       (sd_cd),
+        .sd_rst      (sd_rst),
+        .sd_sclk     (sd_sclk),
+        .sd_cmd      (sd_cmd),
+        .sd_dat      (sd_dat),
+        .sdctrl_rdata(sdctrl_rdata),
+        .sdctrl_busy (sdctrl_busy),
+        .w_mc_addr   (interconnect.w_mc_addr),
+        .w_mc_wdata  (interconnect.w_mc_wdata),
+        .w_mode_is_mc(interconnect.w_mode_is_mc),
+        .w_mc_aces   (interconnect.w_mc_aces),
+        .w_mem_we    (interconnect.w_mem_we)
+    );
 
 /*********** Chika Chika **************************/
     reg  r_led1_B=0,r_led1_G=0,r_led1_R=0;

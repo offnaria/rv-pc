@@ -62,11 +62,6 @@ module m_interconnect(
     output wire         w_clkin_phy,
     input  wire  [1:0]  w_rxd_phy,
     input  wire         w_rxerr_phy,
-    input  wire         sd_cd,
-    output wire         sd_rst,
-    output wire         sd_sclk,
-    inout  wire         sd_cmd,
-    inout  wire [ 3:0]  sd_dat,
     output wire         w_init_start,
     output wire [ 3:0]  vga_red,
     output wire [ 3:0]  vga_green,
@@ -87,7 +82,14 @@ module m_interconnect(
     output wire         w_ps2_kbd_we,
     output wire [ 7:0]  w_ps2_kbd_data,
     output wire         w_ps2_mouse_we,
-    output wire [ 7:0]  w_ps2_mouse_data
+    output wire [ 7:0]  w_ps2_mouse_data,
+    // SD card controller
+    input  wire [31:0]  loader_addr,
+    input  wire [31:0]  loader_data,
+    input  wire         loader_we,
+    input  wire         loader_done,
+    input  wire [31:0]  sdctrl_rdata,
+    input  wire         sdctrl_busy
 );
 
     initial r_finish = 0;
@@ -374,38 +376,6 @@ module m_interconnect(
         .VGA_GREEN(vga_green),
         .frame_addr(w_fb_raddr)
         );
-
-
-
-    /***********************************         SD Card       ***********************************/
-    wire [31:0] loader_addr;
-    wire [31:0] loader_data;
-    wire        loader_we;
-    wire        loader_done;
-    wire [31:0] sdctrl_rdata;
-    wire        sdctrl_busy;
-    periph_sdcard periph_sdcard(
-        .CLK         (CLK),
-        .RST_X       (RST_X),
-        .loader_addr (loader_addr),
-        .loader_data (loader_data),
-        .loader_we   (loader_we),
-        .loader_done (loader_done),
-        .w_dram_busy (w_dram_busy),
-        .clk_50mhz   (clk_50mhz),
-        .sd_cd       (sd_cd),
-        .sd_rst      (sd_rst),
-        .sd_sclk     (sd_sclk),
-        .sd_cmd      (sd_cmd),
-        .sd_dat      (sd_dat),
-        .sdctrl_rdata(sdctrl_rdata),
-        .sdctrl_busy (sdctrl_busy),
-        .w_mc_addr   (w_mc_addr),
-        .w_mc_wdata   (w_mc_wdata),
-        .w_mode_is_mc(w_mode_is_mc),
-        .w_mc_aces   (w_mc_aces),
-        .w_mem_we    (w_mem_we)
-    );
 
     /***********************************          OUTPUT        ***********************************/
     reg  [31:0] r_data_data = 0;
