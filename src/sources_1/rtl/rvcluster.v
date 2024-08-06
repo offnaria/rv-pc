@@ -14,7 +14,6 @@ module m_RVCluster (
     input  wire [2:0]   w_mc_mode,
 
     output wire         r_halt,         // register, set if the processor is halted
-    output wire [31:0]  w_core_odata,   // constant 0
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
     output wire [2:0]   w_data_ctrl,    // from r_data_ctrl
@@ -25,8 +24,6 @@ module m_RVCluster (
     output wire [31:0]  w_satp,         // from register satp
     output wire [31:0]  w_mstatus,      // from register mstatus
     output wire [31:0]  w_mip,          // from register mip
-    output wire [31:0]  w_core_pc,      // from register pc
-    output wire [31:0]  w_core_ir,      // from r_ir
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
     output wire         w_data_we,      // from r_data_we, write enable for DRAM memory
@@ -51,7 +48,6 @@ module m_RVCluster (
         .w_pagefault(w_pagefault),
         .w_mc_mode(w_mc_mode),
         .r_halt(r_halt),
-        .w_core_odata(w_core_odata),
         .w_data_wdata(w_data_wdata),
         .w_insn_addr(w_insn_addr),
         .w_data_ctrl(w_data_ctrl),
@@ -62,8 +58,6 @@ module m_RVCluster (
         .w_satp(w_satp),
         .w_mstatus(w_mstatus),
         .w_mip(w_mip),
-        .w_core_pc(w_core_pc),
-        .w_core_ir(w_core_ir),
         .w_init_stage(w_init_stage),
         .w_tlb_req(w_tlb_req),
         .w_data_we(w_data_we),

@@ -44,7 +44,7 @@ module m_RVCorePL_SMP#(
 (CLK, RST_X, w_stall, r_halt, w_insn_addr, w_data_addr, w_insn_data, w_data_data, w_is_dram_data,
                     w_data_wdata, w_data_we, w_data_ctrl, w_priv, w_satp, w_mstatus, w_mtime, w_mc_mode,
                     w_mtimecmp, w_wmtimecmp, w_clint_we, w_mip, w_wmip, w_plic_we, w_busy, w_pagefault,
-                    w_tlb_req, w_tlb_flush, w_core_pc, w_core_ir, w_core_odata, w_init_stage);
+                    w_tlb_req, w_tlb_flush, w_init_stage);
     input  wire         CLK, RST_X, w_stall;
     input  wire [127:0]  w_insn_data;
     input  wire [127:0]  w_data_data;
@@ -58,7 +58,6 @@ module m_RVCorePL_SMP#(
     input  wire [2:0]   w_mc_mode;
 
     output reg          r_halt;         // register, set if the processor is halted
-    output wire [31:0]  w_core_odata;   // constant 0
     output wire [31:0]  w_data_wdata;   // from r_data_wdata
     output wire [31:0]  w_insn_addr;    // from r_insn_addr
     output wire [2:0]   w_data_ctrl;    // from r_data_ctrl
@@ -69,8 +68,6 @@ module m_RVCorePL_SMP#(
     output wire [31:0]  w_satp;         // from register satp
     output wire [31:0]  w_mstatus;      // from register mstatus
     output wire [31:0]  w_mip;          // from register mip
-    output wire [31:0]  w_core_pc;      // from register pc
-    output wire [31:0]  w_core_ir;      // from r_ir
     output wire         w_init_stage;   // from r_init_stage
     output wire  [1:0]  w_tlb_req;      // from r_tlb_req
     output wire         w_data_we;      // from r_data_we, write enable for DRAM memory
@@ -1296,10 +1293,6 @@ module m_RVCorePL_SMP#(
 
     /**********************************************************************************************/
     initial r_halt = 0;
-
-    assign w_core_pc = IfId_pc;
-    assign w_core_ir = IfId_ir;
-    assign w_core_odata = inst_cnt;
 endmodule
 /**************************************************************************************************/
 
