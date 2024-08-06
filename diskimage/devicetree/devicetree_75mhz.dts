@@ -11,7 +11,7 @@
 		#size-cells = <0x0>;
 		timebase-frequency = <0x47868c0>;
 
-		cpu@0 {
+		cpu0: cpu@0 {
 			device_type = "cpu";
 			reg = <0x0>;
 			status = "okay";
@@ -20,7 +20,7 @@
 			mmu-type = "riscv,sv32";
 			clock-frequency = <0x47868c0>;
 
-			interrupt-controller {
+			cpu0_intc: interrupt-controller {
 				#interrupt-cells = <0x1>;
 				interrupt-controller;
 				compatible = "riscv,cpu-intc";
@@ -42,7 +42,7 @@
 
 		clint@60000000 {
 			compatible = "riscv,clint0";
-			interrupts-extended = <0x1 0x3 0x1 0x7>;
+			interrupts-extended = <&cpu0_intc 0x3 &cpu0_intc 0x7>;
 			reg = <0x0 0x60000000 0x0 0x8000000>;
 		};
 
@@ -52,7 +52,7 @@
 			compatible = "riscv,plic0";
 			riscv,ndev = <0x1f>;
 			reg = <0x0 0x50000000 0x0 0x8000000>;
-			interrupts-extended = <0x1 0x9 0x1 0xb>;
+			interrupts-extended = <&cpu0_intc 0x9 &cpu0_intc 0xb>;
 			phandle = <0x2>;
 		};
 
