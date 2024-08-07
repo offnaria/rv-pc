@@ -45,16 +45,16 @@ module m_RVCorePL_SMP#(
     input  wire         CLK,
     input  wire         RST_X,
     input  wire         w_stall,
-    input  wire [127:0] w_insn_data,
-    input  wire [127:0] w_data_data,
-    input  wire         w_is_dram_data,
-    input  wire [63:0]  w_wmtimecmp,
-    input  wire         w_clint_we,
-    input  wire [31:0]  w_wmip,
-    input  wire         w_plic_we,
-    input  wire         w_busy,
-    input  wire [31:0]  w_pagefault,
-    input  wire [2:0]   w_mc_mode,
+    input  wire [127:0] w_insn_data,    // 128-bit instruction words
+    input  wire [127:0] w_data_data,    // 128-bit data words
+    input  wire         w_is_dram_data, // Indicates if w_data_data is from DRAM
+    input  wire [63:0]  w_wmtimecmp,    // From CLINT to be written into mtimecmp CSR
+    input  wire         w_clint_we,     // Overwrites mtimecmp CSR with w_wmtimecmp if asserted
+    input  wire [31:0]  w_wmip,         // From PLIC to be written into mip CSR
+    input  wire         w_plic_we,      // Overwrites mip CSR with w_wmip if asserted
+    input  wire         w_busy,         // Stalls the processor when asserted
+    input  wire [31:0]  w_pagefault,    // Reports the type of page fault
+    input  wire [2:0]   w_mc_mode,      // Indicates the mode of the memory (micro?) controller
 
     output reg          r_halt,         // register, set if the processor is halted
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
