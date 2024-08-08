@@ -44,6 +44,11 @@ module clint #(
     always @(posedge CLK) begin
         if (!RST_X) begin
             r_mtime <= 64'd0;
+            integer i;
+            for (i = 0; i < N_HARTS; i = i + 1) begin
+                r_msip[i]     <= 32'd0;
+                r_mtimecmp[i] <= 64'd0;
+            end
         end else begin
             if (w_we) begin
                 if (w_offset==16'hBFF8) begin
