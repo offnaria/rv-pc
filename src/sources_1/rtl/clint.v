@@ -8,6 +8,7 @@ module clint #(
     input  wire        w_we,
     input  wire [31:0] w_wdata,
     output wire [31:0] w_rdata,
+    output wire [N_HARTS-1:0] w_mtip,
     output wire [N_HARTS-1:0] w_msip
 );
 /*  Base address: 0x60000000
@@ -45,6 +46,11 @@ module clint #(
             r_mtime <= 64'd0;
         end else begin
             if (w_we) begin
+                if (w_offset==16'hBFF8) begin
+                    r_mtime[31:0] <= w_wdata;
+                end else if (w_offset==16'hBFFC) begin
+                    r_mtime[63:32] <= w_wdata;
+                end
                 integer i;
                 for (i = 0; i < N_HARTS; i = i + 1) begin
                     if (w_offset==4*i) r_msip[i][0] <= w_wdata[0];
@@ -59,6 +65,7 @@ module clint #(
     generate
         integer i;
         for (i = 0; i < N_HARTS; i = i + 1) begin
+            assign w_mtip[i] = (r_mtime >= r_mtimecmp[i]);
             assign w_msip[i] = r_msip[i][0];
         end
     endgenerate
