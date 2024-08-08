@@ -82,7 +82,8 @@ module clint #(
         integer i;
         for (i = 0; i < N_HARTS; i = i + 1) begin
             if (w_offset==4*i) r_rdata = r_msip[i];
-            if (w_offset==16'h4000+8*i) r_rdata = (w_offset[2]) ? r_mtimecmp[i][63:32] : r_mtimecmp[i][31:0];
+            if (w_offset==16'h4000+8*i) r_rdata = r_mtimecmp[i][31:0];
+            if (w_offset==16'h4004+8*i) r_rdata = r_mtimecmp[i][63:32];
         end
         if (!RST_X) r_rdata = 0;
     end
