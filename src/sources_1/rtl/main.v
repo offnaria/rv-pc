@@ -65,6 +65,9 @@ module m_main(
 `endif
               );
 
+    localparam DEBUG = 0;
+    localparam N_HARTS = 1;
+
     wire RST_X_IN = 1;
     wire [15:0] w_sw = 0;
 
@@ -97,8 +100,6 @@ module m_main(
     wire  [2:0] w_data_ctrl;
 
     wire [31:0] w_priv, w_satp, w_mstatus;
-    wire [63:0] w_mtime, w_mtimecmp, w_wmtimecmp;
-    wire        w_clint_we;
     wire [31:0] w_mip, w_wmip;
     wire        w_plic_we;
     wire        w_busy;
@@ -220,7 +221,10 @@ module m_main(
         if(w_init_done && !r_stop && w_led_t[9:8] == 0) r_core_cnt <= r_core_cnt + 1;
     end
 
-    m_interconnect interconnect(
+    m_interconnect #(
+        .N_HARTS(N_HARTS)
+    )
+    interconnect(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .clk_100mhz     (clk_100mhz),
@@ -238,9 +242,6 @@ module m_main(
         .w_satp         (w_satp),
         .w_mstatus      (w_mstatus),
         .w_mtime        (w_mtime),
-        .w_mtimecmp     (w_mtimecmp),
-        .w_wmtimecmp    (w_wmtimecmp),
-        .w_clint_we     (w_clint_we),
         .w_mip          (w_mip),
         .w_wmip         (w_wmip),
         .w_plic_we      (w_plic_we),
@@ -312,38 +313,44 @@ module m_main(
         .loader_we      (loader_we),
         .loader_done    (loader_done),
         .sdctrl_rdata   (sdctrl_rdata),
-        .sdctrl_busy    (sdctrl_busy)
+        .sdctrl_busy    (sdctrl_busy),
+        .w_clint_we     (w_clint_we),
+        .w_clint_wdata  (w_clint_wdata),
+        .w_clint_rdata  (w_clint_rdata),
+        //
+        .w_offset       (w_offset)
     );
 
-    m_RVCluster cluster(
-        .CLK            (CORE_CLK),
-        .RST_X          (CORE_RST_X),
-        .w_stall        (w_mc_mode == 0),
-        .r_halt         (w_halt),
-        .w_insn_addr    (w_insn_addr),
-        .w_data_addr    (w_data_addr),
-        .w_insn_data    (w_insn_data),
-        .w_data_data    (w_data_data),
-        .w_is_dram_data (w_is_dram_data),
-        .w_data_wdata   (w_data_wdata),
-        .w_mc_mode      (w_mc_mode),
-        .w_data_we      (w_data_we),
-        .w_data_ctrl    (w_data_ctrl),
-        .w_priv         (w_priv),
-        .w_satp         (w_satp),
-        .w_mstatus      (w_mstatus),
-        .w_mtime        (w_mtime),
-        .w_mtimecmp     (w_mtimecmp),
-        .w_wmtimecmp    (w_wmtimecmp),
-        .w_clint_we     (w_clint_we),
-        .w_mip          (w_mip),
-        .w_wmip         (w_wmip),
-        .w_plic_we      (w_plic_we),
-        .w_busy         (w_busy),
-        .w_pagefault    (w_pagefault),
-        .w_tlb_req      (w_tlb_req),
-        .w_tlb_flush    (w_tlb_flush),
-        .w_init_stage   (w_init_stage)
+    m_RVCluster #(
+        .N_HARTS(N_HARTS)
+    ) cluster(
+        .CLK(CORE_CLK),
+        .RST_X(CORE_RST_X),
+        .w_stall(w_mc_mode == 0),
+        .w_insn_data(w_insn_data),
+        .w_data_data(w_data_data),
+        .w_is_dram_data(w_is_dram_data),
+        .w_wmip(w_wmip),
+        .w_plic_we(w_plic_we),
+        .w_busy(w_busy),
+        .w_pagefault(w_pagefault),
+        .w_mc_mode(w_mc_mode),
+        .w_mtip(w_mtip),
+        .w_msip(w_msip),
+        .w_mtime(w_mtime),
+        .r_halt(w_halt),
+        .w_data_wdata(w_data_wdata),
+        .w_insn_addr(w_insn_addr),
+        .w_data_ctrl(w_data_ctrl),
+        .w_data_addr(w_data_addr),
+        .w_priv(w_priv),
+        .w_satp(w_satp),
+        .w_mstatus(w_mstatus),
+        .w_mip(w_mip),
+        .w_init_stage(w_init_stage),
+        .w_tlb_req(w_tlb_req),
+        .w_data_we(w_data_we),
+        .w_tlb_flush(w_tlb_flush)
     );
 
     /***********************************         SD Card       ***********************************/
@@ -403,6 +410,44 @@ module m_main(
                                             (w_priv == `PRIV_U) ? 3'b001 :
                                             (w_priv == `PRIV_S) ? 3'b010 :
                                             (w_priv == `PRIV_M) ? 3'b100 : 0;
+
+    /*********************************          CLINT         *********************************/
+    wire [27:0] w_offset;
+    wire w_clint_we;
+    wire [31:0] w_clint_wdata;
+    wire [31:0] w_clint_rdata;
+    wire [N_HARTS-1:0] w_mtip;
+    wire [N_HARTS-1:0] w_msip;
+    wire [63:0] w_mtime;
+
+    clint clint0 (
+        .CLK(CORE_CLK),
+        .RST_X(RST_X),
+        .w_offset(w_offset),
+        .w_we(w_clint_we),
+        .w_wdata(w_clint_wdata),
+        .w_rdata(w_clint_rdata),
+        .w_mtip(w_mtip),
+        .w_msip(w_msip),
+        .w_mtime(w_mtime)
+    );
+
+    generate
+        if (DEBUG) begin
+            ila_0 ila0 (
+                .clk(CORE_CLK),             // input wire clk
+                .probe0(w_offset),          // input wire [27:0]  probe0  
+                .probe1(w_clint_we),        // input wire [0:0]  probe1 
+                .probe2(w_clint_wdata),     // input wire [31:0]  probe2 
+                .probe3(w_clint_rdata),     // input wire [31:0]  probe3 
+                .probe4(w_mtip),            // input wire [0:0]  probe4 
+                .probe5(w_msip),            // input wire [0:0]  probe5 
+                .probe6(w_mtime),           // input wire [63:0]  probe6
+                .probe7(cluster.core0.mip)  // input wire [31:0]  probe7
+            );
+        end
+    endgenerate
+    
 
 endmodule
 

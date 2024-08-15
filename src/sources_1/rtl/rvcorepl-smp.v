@@ -48,21 +48,20 @@ module m_RVCorePL_SMP#(
     input  wire [127:0] w_insn_data,    // 128-bit instruction words
     input  wire [127:0] w_data_data,    // 128-bit data words
     input  wire         w_is_dram_data, // Indicates if w_data_data is from DRAM
-    input  wire [63:0]  w_wmtimecmp,    // From CLINT to be written into mtimecmp CSR
-    input  wire         w_clint_we,     // Overwrites mtimecmp CSR with w_wmtimecmp if asserted
     input  wire [31:0]  w_wmip,         // From PLIC to be written into mip CSR
     input  wire         w_plic_we,      // Overwrites mip CSR with w_wmip if asserted
     input  wire         w_busy,         // Stalls the processor when asserted
     input  wire [31:0]  w_pagefault,    // Reports the type of page fault
     input  wire [2:0]   w_mc_mode,      // Indicates the mode of the memory (micro?) controller
+    input  wire         w_mtip,         // Timer interrupt signal from CLINT
+    input  wire         w_msip,         // Sowtware interrupt (IPI) signal from CLINT
+    input  wire [63:0]  w_mtime,        // Timer from CLINT
 
     output reg          r_halt,         // register, set if the processor is halted
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
     output wire [2:0]   w_data_ctrl,    // from r_data_ctrl
     output wire [31:0]  w_data_addr,    // from r_mem_addr
-    output wire [63:0]  w_mtime,        // from register mtime
-    output wire [63:0]  w_mtimecmp,     // from register mtimecmp
     output wire [31:0]  w_priv,         // from register priv
     output wire [31:0]  w_satp,         // from register satp
     output wire [31:0]  w_mstatus,      // from register mstatus
@@ -75,6 +74,14 @@ module m_RVCorePL_SMP#(
 
     localparam ENABLE_ICACHE=0;
     localparam ENABLE_DCACHE=0;
+
+    localparam MIP_SSIP_BIT   = 1;
+    localparam MIP_MSIP_BIT   = 3;
+    localparam MIP_STIP_BIT   = 5;
+    localparam MIP_MTIP_BIT   = 7;
+    localparam MIP_SEIP_BIT   = 9;
+    localparam MIP_MEIP_BIT   = 11;
+    localparam MIP_LCOFIP_BIT = 13;
 
     /***** registers and CPU architecture state ***************************************************/
     reg  [31:0] pc                 = `D_START_PC;  // Program Counter
@@ -103,8 +110,7 @@ module m_RVCorePL_SMP#(
     reg  [31:0] load_res           = 0;            // For aomic LR/SC
     reg         reserved           = 0;            // For aomic LR/SC
     reg   [1:0] priv               = `PRIV_M;      // Mode
-    reg  [63:0] mtime              = 1;            // Mtime
-    reg  [63:0] mtimecmp           = 1;            // Mtime
+    wire [63:0] mtime              = w_mtime;      // Mtime
 
     /***** CPU Stage registers ********************************************************************/
 
@@ -738,18 +744,12 @@ module m_RVCorePL_SMP#(
     /***********************************           WB           ***********************************/
     assign w_csr_flush = MemWb_op_CSR | MemWb_op_MRET | MemWb_op_SRET;
 
-        /*******************************     CSRs  and Exception   ***********************************/
+    /*******************************     CSRs  and Exception   ***********************************/
 
     reg [31:0] inst_cnt = 0;
     always @ (posedge CLK) begin
-`ifdef REAL_MTIME
-        if(RST_X) mtime <= mtime + 1;
         if (!MemWb_flushed && !MemWb_stall) inst_cnt <= inst_cnt + 1;
-`else
-        if (!MemWb_flushed && !MemWb_stall) mtime <= mtime + 1;
-`endif
     end
-
 
     wire [31:0] pending_interrupts = mip & mie;
     wire [31:0] enable_interrupts  = (pending_interrupts) ? (priv == `PRIV_M) ? ((mstatus & `MSTATUS_MIE) ? ~mideleg : 0) :
@@ -889,24 +889,16 @@ module m_RVCorePL_SMP#(
         endcase
     end
 
-
-
     reg[31:0] next_mip;
     always @ (*) begin
         next_mip = mip;
-        if(mtime > `ENABLE_TIMER && (mtimecmp + 1 < (mtime + !MemWb_flushed)) && accept_interrupt && !ExMem_flushed) begin
-            next_mip = mip | `MIP_MTIP;
+        if (accept_interrupt && !ExMem_flushed) begin
+            next_mip[MIP_MSIP_BIT] = w_msip;
+            next_mip[MIP_MTIP_BIT] = w_mtip;
         end
-        if (w_clint_we) begin
-            next_mip = mip & ~`MIP_MTIP;
-        end else if (w_plic_we) begin
-            next_mip = w_wmip;
-        end
-    end
-
-    always @ (posedge CLK) begin
-        if (w_clint_we) begin
-            mtimecmp    <= w_wmtimecmp;
+        if (w_plic_we) begin
+            next_mip[MIP_MEIP_BIT] = w_wmip[MIP_MEIP_BIT];
+            next_mip[MIP_SEIP_BIT] = w_wmip[MIP_SEIP_BIT];
         end
     end
 
@@ -1273,8 +1265,6 @@ module m_RVCorePL_SMP#(
 
     assign w_priv     = priv;
     assign w_mstatus  = mstatus;
-    assign w_mtime    = mtime;
-    assign w_mtimecmp = mtimecmp;
     assign w_mip      = mip;
 
     /***********************************    Pipeline Control    ***********************************/

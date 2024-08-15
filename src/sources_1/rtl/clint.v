@@ -1,5 +1,5 @@
 module clint #(
-    parameter N_HARTS = 1;
+    parameter N_HARTS = 1
 )
 (
     input  wire        CLK,
@@ -9,7 +9,8 @@ module clint #(
     input  wire [31:0] w_wdata,
     output wire [31:0] w_rdata,
     output wire [N_HARTS-1:0] w_mtip,
-    output wire [N_HARTS-1:0] w_msip
+    output wire [N_HARTS-1:0] w_msip,
+    output wire [63:0] w_mtime
 );
 /*  Base address: 0x60000000
     Offset
@@ -32,19 +33,19 @@ module clint #(
 
     reg [31:0] r_msip     [0:N_HARTS-1];
     reg [63:0] r_mtimecmp [0:N_HARTS-1];
+    integer i;
     initial begin
-        integer i;
         for (i = 0; i < N_HARTS; i = i + 1) begin
             r_msip[i]     = 32'd0;
             r_mtimecmp[i] = 64'd0;
         end
     end
     reg [63:0] r_mtime = 64'd0;
+    assign w_mtime = r_mtime;
 
     always @(posedge CLK) begin
         if (!RST_X) begin
             r_mtime <= 64'd0;
-            integer i;
             for (i = 0; i < N_HARTS; i = i + 1) begin
                 r_msip[i]     <= 32'd0;
                 r_mtimecmp[i] <= 64'd0;
@@ -56,7 +57,6 @@ module clint #(
                 end else if (w_offset==16'hBFFC) begin
                     r_mtime[63:32] <= w_wdata;
                 end
-                integer i;
                 for (i = 0; i < N_HARTS; i = i + 1) begin
                     if (w_offset==4*i) r_msip[i][0] <= w_wdata[0];
                     if (w_offset==16'h4000+8*i) r_mtimecmp[i][31:0] <= w_wdata;
@@ -67,11 +67,11 @@ module clint #(
         end
     end
 
+    genvar j;
     generate
-        integer i;
-        for (i = 0; i < N_HARTS; i = i + 1) begin
-            assign w_mtip[i] = (r_mtime >= r_mtimecmp[i]);
-            assign w_msip[i] = r_msip[i][0];
+        for (j = 0; j < N_HARTS; j = j + 1) begin
+            assign w_mtip[j] = (r_mtime >= r_mtimecmp[j]);
+            assign w_msip[j] = r_msip[j][0];
         end
     endgenerate
 
@@ -84,7 +84,6 @@ module clint #(
         end else if (w_offset==16'hBFFC) begin
             r_rdata = r_mtime[63:32];
         end
-        integer i;
         for (i = 0; i < N_HARTS; i = i + 1) begin
             if (w_offset==4*i) r_rdata = r_msip[i];
             if (w_offset==16'h4000+8*i) r_rdata = r_mtimecmp[i][31:0];

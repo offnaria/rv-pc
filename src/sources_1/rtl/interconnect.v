@@ -7,7 +7,10 @@
 `include "define.vh"
 
 /**************************************************************************************************/
-module m_interconnect(
+module m_interconnect #(
+    parameter N_HARTS = 1
+)
+(
     input  wire         CLK, clk_50mhz, clk_100mhz, RST_X,
     input  wire [31:0]  w_insn_addr, w_data_addr,
     input  wire [31:0]  w_data_wdata,
@@ -18,9 +21,7 @@ module m_interconnect(
     output wire         w_is_dram_data,
     output reg          r_finish,
     input  wire [31:0]  w_priv, w_satp, w_mstatus,
-    input  wire [63:0]  w_mtime, w_mtimecmp,
-    output wire [63:0]  w_wmtimecmp,
-    output wire         w_clint_we,
+    input  wire [63:0]  w_mtime,
     input  wire [31:0]  w_mip,
     output wire [31:0]  w_wmip,
     output wire         w_plic_we,
@@ -89,7 +90,13 @@ module m_interconnect(
     input  wire         loader_we,
     input  wire         loader_done,
     input  wire [31:0]  sdctrl_rdata,
-    input  wire         sdctrl_busy
+    input  wire         sdctrl_busy,
+    // CLINT
+    output wire         w_clint_we,
+    output wire [31:0]  w_clint_wdata,
+    input  wire [31:0]  w_clint_rdata,
+    //
+    output wire [27:0]  w_offset
 );
 
     initial r_finish = 0;
@@ -106,9 +113,6 @@ module m_interconnect(
     reg  [31:0] plic_served_irq     = 0;
     reg  [31:0] plic_pending_irq    = 0;
     reg  [31:0] r_plic_odata        = 0;
-
-    // CLINT
-    reg  [31:0] r_clint_odata       = 0;
 
     /***** Micro Controller ***********************************************************************/
     reg   [2:0] r_mc_mode           = 0;
@@ -232,7 +236,7 @@ module m_interconnect(
 
     wire  [3:0] w_dev       = w_mem_paddr[31:28];// & 32'hf0000000;
     wire  [3:0] w_virt      = w_mem_paddr[27:24];// & 32'h0f000000;
-    wire [27:0] w_offset    = w_mem_paddr & 28'h7ffffff;
+    assign w_offset         = w_mem_paddr & 28'h7ffffff;
 
     //always@(posedge CLK) w_virt <= w_mem_paddr & 32'h0f000000;
 
@@ -383,7 +387,7 @@ module m_interconnect(
     always@(*) begin
         is_dram_data = 0;
         case (r_dev)
-            `CLINT_BASE_TADDR : r_data_data = r_clint_odata;
+            `CLINT_BASE_TADDR : r_data_data = w_clint_rdata;
             `PLIC_BASE_TADDR  : r_data_data = r_plic_odata;
             `VIRTIO_BASE_TADDR:
             case (r_virt)
@@ -607,13 +611,6 @@ module m_interconnect(
 //    assign w_wmip    = (w_plic_mask_nxt) ? w_mip | (`MIP_MEIP | `MIP_SEIP) :
                         //w_mip & ~(`MIP_MEIP | `MIP_SEIP);
 
-    /***********************************          CLINT         ***********************************/
-    assign w_wmtimecmp  = (w_dev == `CLINT_BASE_TADDR && w_offset==28'h4000 && w_data_we != 0) ?
-                                {w_mtimecmp[63:32], w_data_wdata} :
-                          (w_dev == `CLINT_BASE_TADDR && w_offset==28'h4004 && w_data_we != 0) ?
-                                {w_data_wdata, w_mtimecmp[31:0]} : 0;
-    assign w_clint_we   = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);
-
     /***********************************           BUSY         ***********************************/
     assign w_tlb_busy = //w_use_tlb & w_pw_state != 7
                     !(w_use_tlb)                            ? 0 :
@@ -631,7 +628,7 @@ module m_interconnect(
     wire w_tx_ready;
     assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
     /**********************************************************************************************/
-    // PLIC, CLINT ACCESS
+    // PLIC ACCESS
     reg         r_uart_we = 0;
     reg   [7:0] r_uart_data = 0;
 
@@ -675,12 +672,6 @@ module m_interconnect(
             plic_pending_irq    <= w_virt_irq;
         end
 
-
-        /*********************************          CLINT         *********************************/
-        r_clint_odata <=    (w_offset==28'hbff8) ? w_mtime[31:0] :
-                            (w_offset==28'hbffc) ? w_mtime[63:32] :
-                            (w_offset==28'h4000) ? w_mtimecmp[31:0] :
-                            (w_offset==28'h4004) ? w_mtimecmp[63:32] : 0;
     end
     /**********************************************************************************************/
 
@@ -849,6 +840,10 @@ module m_interconnect(
 
     assign w_led = (w_proc_busy << 12) | (r_mc_mode << 8)
                     | ({w_pl_init_done, r_disk_done, r_bbl_done, r_zero_done} << 4) | r_init_state;
+
+    /*********************************          CLINT         *********************************/
+    assign w_clint_we = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);
+    assign w_clint_wdata = w_data_wdata;
 
 endmodule
 /**************************************************************************************************/
