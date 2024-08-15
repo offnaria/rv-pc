@@ -69,8 +69,6 @@ module m_main(
     localparam N_HARTS = 1;
 
     wire RST_X_IN = 1;
-    wire [15:0] w_sw = 0;
-
 
     wire [15:0] w_led_t; // temporal w_led
 
@@ -279,7 +277,6 @@ module m_main(
         .w_init_stage   (w_init_stage),
         .w_checksum     (w_checksum),
         .w_debug_btnd   (w_btnd),
-        .w_baud         (w_sw[15:14]),
         .w_crs_dv_phy   (w_crs_dv_phy),
         .w_txd_phy      (w_txd_phy),
         .w_txen_phy     (w_txen_phy),
@@ -403,8 +400,7 @@ module m_main(
     end
     wire [2:0] t_led = {r_led1_B, r_led1_G, r_led1_R};
     // User blue, SuperVisor Green or Yellow, Machine, Error -> Red
-    assign {w_led1_B,w_led1_G,w_led1_R} =   (w_sw[0]) ? 0 :
-                                            (w_led_t[3:0] == 4'b0001) ? {r_led1_B, r_led1_G, r_led1_R} :
+    assign {w_led1_B,w_led1_G,w_led1_R} =   (w_led_t[3:0] == 4'b0001) ? {r_led1_B, r_led1_G, r_led1_R} :
                                             (!w_init_done) ? 0 :
                                             (r_blite_cnt != 0) ? 0 :
                                             (w_priv == `PRIV_U) ? 3'b001 :

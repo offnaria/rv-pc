@@ -56,7 +56,6 @@ module m_interconnect #(
     input  wire         w_init_stage,
     output wire [31:0]  w_checksum,
     input  wire         w_debug_btnd,
-    input  wire  [1:0]  w_baud,
     input  wire         w_crs_dv_phy,
     output wire  [1:0]  w_txd_phy,
     output wire         w_txen_phy,
