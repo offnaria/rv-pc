@@ -11,7 +11,7 @@ module m_interconnect #(
     parameter N_HARTS = 1
 )
 (
-    input  wire         CLK, clk_50mhz, clk_100mhz, RST_X,
+    input  wire         CLK, clk_50mhz, RST_X,
     input  wire [31:0]  w_insn_addr, w_data_addr,
     input  wire [31:0]  w_data_wdata,
     input  wire         w_data_we,
@@ -63,11 +63,6 @@ module m_interconnect #(
     input  wire  [1:0]  w_rxd_phy,
     input  wire         w_rxerr_phy,
     output wire         w_init_start,
-    output wire [ 3:0]  vga_red,
-    output wire [ 3:0]  vga_green,
-    output wire [ 3:0]  vga_blue,
-    output wire         vga_h_sync,
-    output wire         vga_v_sync,
     inout  wire         usb_ps2_clk,
     inout  wire         usb_ps2_data,
 `ifdef CH559_USB
@@ -94,6 +89,10 @@ module m_interconnect #(
     output wire         w_clint_we,
     output wire [31:0]  w_clint_wdata,
     input  wire [31:0]  w_clint_rdata,
+    // Framebuffer
+    output wire         w_fb_we,
+    output wire [31:0]  w_fb_wdata,
+    input  wire [31:0]  w_fb_rdata,
     //
     output wire [27:0]  w_offset
 );
@@ -341,44 +340,9 @@ module m_interconnect #(
     wire [31:0] w_mouse_qnum;
     wire [31:0] w_mouse_qsel;
 
-
     /***********************************      Simple Framebuffer     ***********************************/
-    wire        w_fb_we = (w_mem_we && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 5);
-    wire [31:0] w_fb_data;
-    wire [31:0] w_fb_waddr = {4'b0, w_offset};
-    wire [`FB_ADDR_WIDTH-1: 0] w_fb_raddr;
-    wire [`FB_PIX_WIDTH-1: 0] w_fb_wdata0;
-    wire [`FB_PIX_WIDTH-1: 0] w_fb_wdata1;
-    wire [`FB_PIX_WIDTH-1: 0] w_fb_rdata;
-    localparam BPC = `FB_PIX_WIDTH/3;   // Bits per Color
-    wire [11:0] w_pix_data = {w_fb_rdata[BPC*3-1:BPC*2], {(4-BPC){1'b0}}, w_fb_rdata[BPC*2-1:BPC], {(4-BPC){1'b0}}, w_fb_rdata[BPC-1:0], {(4-BPC){1'b0}}};
-
-    color_converter c0(.i_data(w_mem_wdata[15: 0]), .o_data(w_fb_wdata0));
-    color_converter c1(.i_data(w_mem_wdata[31:16]), .o_data(w_fb_wdata1));
-
-    wire pix_clk;
-    clk_wiz_3 m_clkgen3 (.clk_in1(clk_100mhz), .reset(), .clk_out1(pix_clk), .locked());
-
-    framebuf  fb0 (
-        .i_wclk(CLK),
-        .i_we(w_fb_we),
-        .i_waddr(w_fb_waddr[`FB_ADDR_WIDTH-1: 0]),
-        .i_wdata({w_fb_wdata1, w_fb_wdata0}),
-        .i_rclk(pix_clk),
-        .i_raddr(w_fb_raddr),
-        .o_rdata(w_fb_rdata)
-        );
-
-    VGA vga (
-        .pix_clk(pix_clk),
-        .frame_pix(w_pix_data),
-        .VGA_H_SYNC(vga_h_sync),
-        .VGA_V_SYNC(vga_v_sync),
-        .VGA_RED(vga_red),
-        .VGA_BLUE(vga_blue),
-        .VGA_GREEN(vga_green),
-        .frame_addr(w_fb_raddr)
-        );
+    assign w_fb_we = (w_mem_we && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 5);
+    assign w_fb_wdata = w_mem_wdata;
 
     /***********************************          OUTPUT        ***********************************/
     reg  [31:0] r_data_data = 0;
@@ -395,7 +359,7 @@ module m_interconnect #(
                 2: r_data_data = w_ether_data;
                 3: r_data_data = w_keybrd_data;
                 4: r_data_data = w_mouse_data;
-                5: r_data_data = w_fb_data;
+                5: r_data_data = w_fb_rdata;
                 default: r_data_data = 0;
             endcase
             default: begin

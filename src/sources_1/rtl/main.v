@@ -116,7 +116,6 @@ module m_main(
     wire clk_50mhz, w_locked_50mhz;
     clk_wiz_2 clkgen2 (.clk_in1(CLK), .resetn(RST_X_IN), .clk_out1(clk_50mhz), .locked(w_locked_50mhz));
 
-    wire clk_100mhz = CLK;
     // Reset
     wire RST        = ~w_locked || ~w_locked_50mhz;
     wire RST_X      = ~RST & RST_X2;
@@ -219,13 +218,14 @@ module m_main(
         if(w_init_done && !r_stop && w_led_t[9:8] == 0) r_core_cnt <= r_core_cnt + 1;
     end
 
+    wire [27:0] w_offset;
+
     m_interconnect #(
         .N_HARTS(N_HARTS)
     )
     interconnect(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
-        .clk_100mhz     (clk_100mhz),
         .RST_X          (RST_X),
         .w_insn_addr    (w_insn_addr),
         .w_data_addr    (w_data_addr),
@@ -283,11 +283,6 @@ module m_main(
         .w_rxd_phy      (w_rxd_phy),
         .w_rxerr_phy    (w_rxerr_phy),
         .w_clkin_phy    (w_clkin_phy),
-        .vga_red        (vga_red),
-        .vga_green      (vga_green),
-        .vga_blue       (vga_blue),
-        .vga_h_sync     (vga_h_sync),
-        .vga_v_sync     (vga_v_sync),
         .usb_ps2_clk    (usb_ps2_clk),
         .usb_ps2_data   (usb_ps2_data),
 `ifdef CH559_USB
@@ -314,6 +309,10 @@ module m_main(
         .w_clint_we     (w_clint_we),
         .w_clint_wdata  (w_clint_wdata),
         .w_clint_rdata  (w_clint_rdata),
+        // Framebuffer
+        .w_fb_we         (w_fb_we),
+        .w_fb_wdata      (w_fb_wdata),
+        .w_fb_rdata      (w_fb_rdata),
         //
         .w_offset       (w_offset)
     );
@@ -408,7 +407,6 @@ module m_main(
                                             (w_priv == `PRIV_M) ? 3'b100 : 0;
 
     /*********************************          CLINT         *********************************/
-    wire [27:0] w_offset;
     wire w_clint_we;
     wire [31:0] w_clint_wdata;
     wire [31:0] w_clint_rdata;
@@ -444,6 +442,25 @@ module m_main(
         end
     endgenerate
     
+    /***********************************      Simple Framebuffer     ***********************************/
+    wire pix_clk;
+    wire w_fb_we;
+    wire [31:0] w_fb_wdata;
+    wire [31:0] w_fb_rdata;
+    clk_wiz_3 m_clkgen3 (.clk_in1(CLK), .reset(), .clk_out1(pix_clk), .locked()); // 100MHz to 25MHz
+    periph_framebuffer periph_framebuffer (
+        .CLK(CORE_CLK),
+        .pix_clk(pix_clk),
+        .w_offset(w_offset),
+        .w_we(w_fb_we),
+        .w_wdata(w_fb_wdata),
+        .w_rdata(w_fb_rdata),
+        .vga_h_sync(vga_h_sync),
+        .vga_v_sync(vga_v_sync),
+        .vga_red(vga_red),
+        .vga_blue(vga_blue),
+        .vga_green(vga_green)
+    );
 
 endmodule
 

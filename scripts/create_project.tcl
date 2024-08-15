@@ -117,6 +117,7 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/microc.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/interconnect.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/mouse.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/periph_framebuffer.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/periph_sdcard.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/plic.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/ps2interface.v" ]\

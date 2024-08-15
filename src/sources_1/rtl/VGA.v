@@ -24,14 +24,16 @@ module framebuf (
         end
     end
 
-    reg [`FB_ADDR_WIDTH-1:0] r_raddr;
+    reg [`FB_ADDR_WIDTH-2:0] r_raddr;
+    reg                      r_raddr_lsb;
 
     always @ (posedge i_rclk) begin
-        r_raddr <= i_raddr;
+        r_raddr     <= i_raddr >> 1;
+        r_raddr_lsb <= i_raddr[0];
     end
 
-    assign o_rdata = (r_raddr[0]) ? mem[r_raddr >> 1][2*`FB_PIX_WIDTH-1: `FB_PIX_WIDTH]:
-                                    mem[r_raddr >> 1][`FB_PIX_WIDTH-1: 0];
+    assign o_rdata = (r_raddr_lsb) ? mem[r_raddr][2*`FB_PIX_WIDTH-1: `FB_PIX_WIDTH]:
+                                     mem[r_raddr][`FB_PIX_WIDTH-1: 0];
 
 
 endmodule
