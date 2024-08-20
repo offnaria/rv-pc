@@ -11,8 +11,7 @@ module plic #(
     input  wire                 w_re,    // read enable for interrupt claim
     output wire [31:0]          w_rdata,
     input  wire [N_INT_SRC-1:0] w_int_src,
-    output wire [N_HARTS-1:0]   w_meip,
-    output wire [N_HARTS-1:0]   w_seip
+    output wire [N_HARTS-1:0]   w_eip
 );
 /*  Base address: 0x50000000
     Offset
@@ -201,7 +200,7 @@ module plic #(
     reg [W_INT_PRIO-1:0] w_int_prio [0:N_INT_SRC-1];
     reg [W_INT_PRIO-1:0] w_max_prio [0:N_HARTS-1];
     reg [W_INT_ID-1:0]   w_max_id   [0:N_HARTS-1];
-    reg [N_HARTS-1:0]    r_eip;
+    reg [N_HARTS-1:0]    r_eip = 0;
 
     always @(*) begin
         for (i = 0; i < N_INT_SRC; i = i + 1) begin
@@ -241,8 +240,7 @@ module plic #(
     genvar g;
     generate
         for (g = 0; g < N_HARTS; g = g + 1) begin
-            assign w_meip[g] = r_eip[g];
-            assign w_seip[g] = r_eip[g];
+            assign w_eip[g] = r_eip[g];
         end
     endgenerate
 
