@@ -22,9 +22,9 @@ module m_interconnect #(
     output reg          r_finish,
     input  wire [31:0]  w_priv, w_satp, w_mstatus,
     input  wire [63:0]  w_mtime,
-    input  wire [31:0]  w_mip,
-    output wire [31:0]  w_wmip,
-    output wire         w_plic_we,
+    // input  wire [31:0]  w_mip,
+    // output wire [31:0]  w_wmip,
+    // output wire         w_plic_we,
     output wire         w_proc_busy,
     output wire [31:0]  w_pagefault,
     input  wire  [1:0]  w_tlb_req,
@@ -85,6 +85,11 @@ module m_interconnect #(
     input  wire         loader_done,
     input  wire [31:0]  sdctrl_rdata,
     input  wire         sdctrl_busy,
+    // PLIC
+    output wire         w_plic_we,
+    output wire [31:0]  w_plic_wdata,
+    output wire         w_plic_re,
+    input  wire [31:0]  w_plic_rdata,
     // CLINT
     output wire         w_clint_we,
     output wire [31:0]  w_clint_wdata,
@@ -106,11 +111,6 @@ module m_interconnect #(
 
     // TO HOST
     reg  [31:0] r_tohost            = 0;
-
-    // PLIC
-    reg  [31:0] plic_served_irq     = 0;
-    reg  [31:0] plic_pending_irq    = 0;
-    reg  [31:0] r_plic_odata        = 0;
 
     /***** Micro Controller ***********************************************************************/
     reg   [2:0] r_mc_mode           = 0;
@@ -314,7 +314,8 @@ module m_interconnect #(
     wire        w_ether_irq_oe;
     wire [31:0] w_ether_qnum;
     wire [31:0] w_ether_qsel;
-    reg  plic_ether_en = 0;
+    // reg  plic_ether_en = 0;
+    reg  plic_ether_en = 1'b1; // Correct?
 
     /***********************************  　Keyboard     ***********************************/
 
@@ -351,7 +352,7 @@ module m_interconnect #(
         is_dram_data = 0;
         case (r_dev)
             `CLINT_BASE_TADDR : r_data_data = w_clint_rdata;
-            `PLIC_BASE_TADDR  : r_data_data = r_plic_odata;
+            `PLIC_BASE_TADDR  : r_data_data = w_plic_rdata;
             `VIRTIO_BASE_TADDR:
             case (r_virt)
                 0: r_data_data = w_cons_data;
@@ -370,10 +371,6 @@ module m_interconnect #(
     end
     assign w_data_data = (is_dram_data) ? w_dram_odata128 : {96'h0, r_data_data};
     assign w_is_dram_data = is_dram_data;
-    /*assign      w_data_data =   (r_dev == `CLINT_BASE_TADDR)    ? r_clint_odata     :
-                                (r_dev == `PLIC_BASE_TADDR)     ? r_plic_odata      :
-                                (r_dev == `VIRTIO_BASE_TADDR)   ?
-                                    ((r_virt == 0) ? w_cons_data : w_disk_data) : w_dram_odata;*/
 
     /***********************************          VirtIO        ***********************************/
 
@@ -481,25 +478,16 @@ module m_interconnect #(
 
     wire [31:0] w_mc_arg = r_mc_arg;
 
-
-    wire [31:0] w_virt_irq      = (w_uart_req)      ? w_cons_irq :
-                                  (w_disk_irq_oe)   ? w_disk_irq :
-                                  (w_ether_irq_oe)  ? w_ether_irq :
-                                  (w_keybrd_irq_oe) ? w_keybrd_irq :
-                                  (w_mouse_irq_oe)  ? w_mouse_irq :
-                                                      w_cons_irq;
-
-    wire        w_virt_irq_oe   = w_cons_irq_oe | w_disk_irq_oe | w_uart_req | w_ether_irq_oe | w_keybrd_irq_oe | w_mouse_irq_oe;
-
     m_RVuc mc(CLK, w_mode_is_mc, (w_dram_busy | sdctrl_busy), w_mc_addr, w_mc_arg, w_mc_wdata,
                 w_mc_we, w_mc_ctrl, w_mc_aces);
+
+    reg [31:0] plic_pending_irq = 0; // Correct?
 
     m_console   console(CLK, 1'b1, w_cons_we, w_cons_addr, w_mem_wdata, plic_pending_irq, w_cons_data,
                         w_cons_irq, w_cons_irq_oe, r_mc_mode, w_cons_req, w_cons_qnum, w_cons_qsel, w_uart_req);
 
     m_disk      disk(CLK, 1'b1, w_disk_we, w_disk_addr, w_mem_wdata, plic_pending_irq, w_disk_data,
                         w_disk_irq, w_disk_irq_oe, r_mc_mode, w_disk_req, w_disk_qnum, w_disk_qsel);
-
 
     m_ether     ether(CLK, clk_50mhz, RST_X, w_ether_we, w_ether_addr, w_mem_wdata, plic_pending_irq, w_ether_data,
                         w_ether_irq, w_ether_irq_oe, r_mc_mode, w_ether_send_req, w_ether_recv_req, w_ether_qnum, w_ether_qsel,
@@ -518,61 +506,17 @@ module m_interconnect #(
                         w_mouse_irq, w_mouse_irq_oe, r_mc_mode, w_mouse_req, w_mouse_qnum, w_mouse_qsel, w_mtime, w_init_stage,
                         usb_ps2_clk, usb_ps2_data, w_ps2_mouse_we, w_ps2_mouse_data);
 
-
     /***********************************           PLIC         ***********************************/
-    wire [31:0] w_plic_pending_irq_nxt  =   w_virt_irq_oe ? w_virt_irq : plic_pending_irq;
-    wire [31:0] w_plic_mask             =   w_plic_pending_irq_nxt & ~plic_served_irq;
-    wire [31:0] w_plic_served_irq_nxt   =   (w_virt_irq_oe) ? plic_served_irq :
-                                          (w_isread) ? plic_served_irq | w_mask_t :
-                                          plic_served_irq & ~(1 << (w_data_wdata-1));
+    assign w_plic_we = (w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_iswrite;
+    assign w_plic_wdata = w_data_wdata;
+    assign w_plic_re = (w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
-    wire [31:0]     w_plic_claim;
-    wire[31:0]      w_mask_t = w_plic_mask & (~w_plic_mask+1);
-
-    reg [31:0]      r_plic_claim = 0;
-
-    always @ (*) begin
-        case (w_mask_t)
-            32'h00000001: r_plic_claim = 1 ;   // console
-            32'h00000002: r_plic_claim = 2 ;   // disk
-            32'h00000004: r_plic_claim = 3 ;   // ethernet
-            32'h00000008: r_plic_claim = 4 ;   // keyboard
-            32'h00000010: r_plic_claim = 5 ;   // mouse
-            default: r_plic_claim = 0;
-        endcase
-    end
-
-    wire w_plic_aces = (w_dev == `PLIC_BASE_TADDR && !w_tlb_busy &&
-            ((w_isread && w_plic_mask != 0) || (w_iswrite && w_offset == `PLIC_HART_BASE+4)));
-
-    reg  [31:0] r_wmip = 0;
-    reg         r_plic_we = 0;
-
-    reg  [31:0] r_plic_pending_irq_t    = 0;
-    reg  [31:0] r_plic_served_irq_t     = 0;
-
-    reg         r_virt_irq_oe_t = 0;
-    reg         r_plic_aces_t   = 0;
-
-    wire [31:0] w_plic_mask_nxt = r_plic_pending_irq_t & ~r_plic_served_irq_t;
-
-    always@(posedge CLK) begin
-        if(!w_tlb_busy) begin
-            //r_plic_we   <= (w_virt_irq_oe || w_plic_aces);
-            r_virt_irq_oe_t         <= w_virt_irq_oe;
-            r_plic_aces_t           <= w_plic_aces;
-            r_plic_pending_irq_t    <= w_plic_pending_irq_nxt;
-            r_plic_served_irq_t     <= w_plic_served_irq_nxt;
-        end
-    end
-
-    assign w_plic_we    = (r_virt_irq_oe_t || r_plic_aces_t);//r_plic_we;
-    assign w_wmip       = (w_plic_mask_nxt) ? w_mip | (`MIP_MEIP | `MIP_SEIP) :
-                          w_mip & ~(`MIP_MEIP | `MIP_SEIP);
-
-//    assign w_plic_we = (w_virt_irq_oe || w_plic_aces);
-//    assign w_wmip    = (w_plic_mask_nxt) ? w_mip | (`MIP_MEIP | `MIP_SEIP) :
-                        //w_mip & ~(`MIP_MEIP | `MIP_SEIP);
+    // Important????
+    // always@(posedge CLK) begin
+    //     if (w_dev == `PLIC_BASE_TADDR && !w_tlb_busy && w_iswrite && w_offset == 28'h2000) begin
+    //         plic_ether_en <= (w_data_wdata & (1 << `VIRTIO_ETHER_IRQ)) != 0;
+    //     end
+    // end
 
     /***********************************           BUSY         ***********************************/
     assign w_tlb_busy = //w_use_tlb & w_pw_state != 7
@@ -591,18 +535,12 @@ module m_interconnect #(
     wire w_tx_ready;
     assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
     /**********************************************************************************************/
-    // PLIC ACCESS
     reg         r_uart_we = 0;
     reg   [7:0] r_uart_data = 0;
 
     always@(posedge CLK) begin
         r_dev   <= w_dev;
         r_virt  <= w_virt;
-
-        if (w_dev == `PLIC_BASE_TADDR && !w_tlb_busy && w_iswrite && w_offset == 28'h2000) begin
-            plic_ether_en <= (w_data_wdata & (1 << `VIRTIO_ETHER_IRQ)) != 0;
-        end
-
 
         /*********************************         TOHOST         *********************************/
         // OUTPUT CHAR
@@ -624,17 +562,6 @@ module m_interconnect #(
             r_tohost <= (w_mem_paddr==`TOHOST_ADDR && w_mem_we) ? w_mem_wdata   :
                         (r_tohost[31:16]==`CMD_PRINT_CHAR)      ? 0             : r_tohost;
         end
-
-        /**********************************         PLIC         **********************************/
-        if(w_plic_aces) begin
-            r_plic_odata    <= r_plic_claim;
-            plic_served_irq <= w_plic_served_irq_nxt;
-        end
-
-        if(w_virt_irq_oe) begin
-            plic_pending_irq    <= w_virt_irq;
-        end
-
     end
     /**********************************************************************************************/
 

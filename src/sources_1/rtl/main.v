@@ -65,8 +65,11 @@ module m_main(
 `endif
               );
 
+    /*******************************************************************************/
     localparam DEBUG = 0;
     localparam N_HARTS = 1;
+    localparam N_INT_SRC = 5;
+    /*******************************************************************************/
 
     wire RST_X_IN = 1;
 
@@ -98,8 +101,6 @@ module m_main(
     wire  [2:0] w_data_ctrl;
 
     wire [31:0] w_priv, w_satp, w_mstatus;
-    wire [31:0] w_mip, w_wmip;
-    wire        w_plic_we;
     wire        w_busy;
     wire [31:0] w_pagefault;
     wire  [1:0] w_tlb_req;
@@ -240,9 +241,6 @@ module m_main(
         .w_satp         (w_satp),
         .w_mstatus      (w_mstatus),
         .w_mtime        (w_mtime),
-        .w_mip          (w_mip),
-        .w_wmip         (w_wmip),
-        .w_plic_we      (w_plic_we),
         .w_proc_busy    (w_busy),
         .w_pagefault    (w_pagefault),
         .w_tlb_req      (w_tlb_req),
@@ -306,6 +304,12 @@ module m_main(
         .loader_done    (loader_done),
         .sdctrl_rdata   (sdctrl_rdata),
         .sdctrl_busy    (sdctrl_busy),
+        // PLIC
+        .w_plic_we      (w_plic_we),
+        .w_plic_wdata   (w_plic_wdata),
+        .w_plic_re      (w_plic_re),
+        .w_plic_rdata   (w_plic_rdata),
+        // CLINT
         .w_clint_we     (w_clint_we),
         .w_clint_wdata  (w_clint_wdata),
         .w_clint_rdata  (w_clint_rdata),
@@ -326,13 +330,13 @@ module m_main(
         .w_insn_data(w_insn_data),
         .w_data_data(w_data_data),
         .w_is_dram_data(w_is_dram_data),
-        .w_wmip(w_wmip),
-        .w_plic_we(w_plic_we),
         .w_busy(w_busy),
         .w_pagefault(w_pagefault),
         .w_mc_mode(w_mc_mode),
         .w_mtip(w_mtip),
         .w_msip(w_msip),
+        .w_meip(w_meip),
+        .w_seip(w_seip),
         .w_mtime(w_mtime),
         .r_halt(w_halt),
         .w_data_wdata(w_data_wdata),
@@ -342,7 +346,6 @@ module m_main(
         .w_priv(w_priv),
         .w_satp(w_satp),
         .w_mstatus(w_mstatus),
-        .w_mip(w_mip),
         .w_init_stage(w_init_stage),
         .w_tlb_req(w_tlb_req),
         .w_data_we(w_data_we),
@@ -406,6 +409,36 @@ module m_main(
                                             (w_priv == `PRIV_S) ? 3'b010 :
                                             (w_priv == `PRIV_M) ? 3'b100 : 0;
 
+    /*********************************          PLIC          *********************************/
+    wire w_plic_we;
+    wire [31:0] w_plic_wdata;
+    wire w_plic_re;
+    wire [31:0] w_plic_rdata;
+    wire [N_INT_SRC-1:0] w_int_src = {interconnect.w_mouse_irq_oe,  // ID 5: mouse
+                                      interconnect.w_keybrd_irq_oe, // ID 4: keyboard
+                                      interconnect.w_ether_irq_oe,  // ID 3: ethernet
+                                      interconnect.w_disk_irq_oe,   // ID 2: disk
+                                      interconnect.w_uart_req};     // ID 1: console
+    wire [N_HARTS-1:0] w_eip;
+    wire [N_HARTS-1:0] w_meip = w_eip; // Fixme?
+    wire [N_HARTS-1:0] w_seip = w_eip;
+    
+    plic #(
+        .N_HARTS(N_HARTS),
+        .N_INT_SRC(N_INT_SRC),
+        .W_INT_PRIO(32)
+    ) plic0 (
+        .CLK(CORE_CLK),
+        .RST_X(RST_X),
+        .w_offset(w_offset),
+        .w_we(w_plic_we),
+        .w_wdata(w_plic_wdata),
+        .w_re(w_plic_re),
+        .w_rdata(w_plic_rdata),
+        .w_int_src(w_int_src),
+        .w_eip(w_eip)
+    );
+
     /*********************************          CLINT         *********************************/
     wire w_clint_we;
     wire [31:0] w_clint_wdata;
@@ -414,7 +447,9 @@ module m_main(
     wire [N_HARTS-1:0] w_msip;
     wire [63:0] w_mtime;
 
-    clint clint0 (
+    clint #(
+        .N_HARTS(N_HARTS)
+    ) clint0 (
         .CLK(CORE_CLK),
         .RST_X(RST_X),
         .w_offset(w_offset),

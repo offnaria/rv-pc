@@ -48,13 +48,13 @@ module m_RVCorePL_SMP#(
     input  wire [127:0] w_insn_data,    // 128-bit instruction words
     input  wire [127:0] w_data_data,    // 128-bit data words
     input  wire         w_is_dram_data, // Indicates if w_data_data is from DRAM
-    input  wire [31:0]  w_wmip,         // From PLIC to be written into mip CSR
-    input  wire         w_plic_we,      // Overwrites mip CSR with w_wmip if asserted
     input  wire         w_busy,         // Stalls the processor when asserted
     input  wire [31:0]  w_pagefault,    // Reports the type of page fault
     input  wire [2:0]   w_mc_mode,      // Indicates the mode of the memory (micro?) controller
     input  wire         w_mtip,         // Timer interrupt signal from CLINT
     input  wire         w_msip,         // Sowtware interrupt (IPI) signal from CLINT
+    input  wire         w_meip,         // Machine external interrupt signal from PLIC
+    input  wire         w_seip,         // Supervisor external interrupt signal from PLIC
     input  wire [63:0]  w_mtime,        // Timer from CLINT
 
     output reg          r_halt,         // register, set if the processor is halted
@@ -65,7 +65,6 @@ module m_RVCorePL_SMP#(
     output wire [31:0]  w_priv,         // from register priv
     output wire [31:0]  w_satp,         // from register satp
     output wire [31:0]  w_mstatus,      // from register mstatus
-    output wire [31:0]  w_mip,          // from register mip
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
     output wire         w_data_we,      // from r_data_we, write enable for DRAM memory
@@ -895,10 +894,8 @@ module m_RVCorePL_SMP#(
         if (accept_interrupt && !ExMem_flushed) begin
             next_mip[MIP_MSIP_BIT] = w_msip;
             next_mip[MIP_MTIP_BIT] = w_mtip;
-        end
-        if (w_plic_we) begin
-            next_mip[MIP_MEIP_BIT] = w_wmip[MIP_MEIP_BIT];
-            next_mip[MIP_SEIP_BIT] = w_wmip[MIP_SEIP_BIT];
+            next_mip[MIP_MEIP_BIT] = w_meip;
+            next_mip[MIP_SEIP_BIT] = w_seip;
         end
     end
 
@@ -1265,7 +1262,6 @@ module m_RVCorePL_SMP#(
 
     assign w_priv     = priv;
     assign w_mstatus  = mstatus;
-    assign w_mip      = mip;
 
     /***********************************    Pipeline Control    ***********************************/
 

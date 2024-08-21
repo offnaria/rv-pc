@@ -204,7 +204,7 @@ module plic #(
 
     always @(*) begin
         for (i = 0; i < N_INT_SRC; i = i + 1) begin
-            w_int_prio[i] = (r_int_pending[I]) ? r_priority[i] : 0;
+            w_int_prio[i] = (r_int_pending[i]) ? r_priority[i] : 0;
         end
     end
 
