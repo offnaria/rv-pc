@@ -426,7 +426,7 @@ module m_main(
     plic #(
         .N_HARTS(N_HARTS),
         .N_INT_SRC(N_INT_SRC),
-        .W_INT_PRIO(32)
+        .W_INT_PRIO(8)
     ) plic0 (
         .CLK(CORE_CLK),
         .RST_X(RST_X),
@@ -438,6 +438,20 @@ module m_main(
         .w_int_src(w_int_src),
         .w_eip(w_eip)
     );
+
+    ila_1 your_instance_name (
+	.clk(CORE_CLK), // input wire clk
+
+
+	.probe0(w_offset), // input wire [29:0]  probe0  
+	.probe1(w_plic_we), // input wire [0:0]  probe1 
+	.probe2(w_plic_wdata), // input wire [31:0]  probe2 
+	.probe3(w_plic_re), // input wire [0:0]  probe3 
+	.probe4(w_plic_rdata), // input wire [31:0]  probe4 
+	.probe5(w_int_src), // input wire [4:0]  probe5 
+	.probe6(w_eip), // input wire [0:0]  probe6
+	.probe7(w_core_pc)
+);
 
     /*********************************          CLINT         *********************************/
     wire w_clint_we;
