@@ -894,9 +894,9 @@ module m_RVCorePL_SMP#(
         if (accept_interrupt && !ExMem_flushed) begin
             next_mip[MIP_MSIP_BIT] = w_msip;
             next_mip[MIP_MTIP_BIT] = w_mtip;
-            next_mip[MIP_MEIP_BIT] = w_meip;
-            next_mip[MIP_SEIP_BIT] = w_seip;
         end
+        next_mip[MIP_MEIP_BIT] = w_meip;
+        next_mip[MIP_SEIP_BIT] = w_seip;
     end
 
     wire [31:0] w_sstatus   = (mstatus & ~`SSTATUS_MASK) | (MemWb_wb_data_csr & `SSTATUS_MASK);

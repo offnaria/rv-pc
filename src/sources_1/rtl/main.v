@@ -450,7 +450,10 @@ module m_main(
 	.probe4(w_plic_rdata), // input wire [31:0]  probe4 
 	.probe5(w_int_src), // input wire [4:0]  probe5 
 	.probe6(w_eip), // input wire [0:0]  probe6
-	.probe7(w_core_pc)
+	.probe7(cluster.core0.ExMem_pc),
+	.probe8(cluster.core0.ExMem_ir),
+	.probe9(cluster.core0.mip),
+	.probe10({11'b0, plic0.r_int_pending, 11'b0, plic0.r_int_pending_state})
 );
 
     /*********************************          CLINT         *********************************/

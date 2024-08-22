@@ -54,6 +54,15 @@ module plic #(
 
     localparam W_INT_ID = $clog2(N_INT_SRC+1);
 
+    localparam PRIO_BASE = 32'h0;
+    localparam PEND_BASE = 32'h1000;
+    localparam ENBL_BASE = 32'h2000;
+    localparam ENBL_SIZE = 32'h80;
+    localparam THRS_BASE = 32'h200000;
+    localparam THRS_SIZE = 32'h1000;
+    localparam CLAM_BASE = 32'h200004;
+    localparam CLAM_SIZE = 32'h1000;
+
     reg [W_INT_PRIO-1:0] r_priority  [0:N_INT_SRC-1];
     reg [31:0]           w_pending   [0:(N_INT_SRC-1)/32]; // read only for MMIO
     reg [31:0]           r_enable    [0:((N_INT_SRC-1)/32+1)*N_HARTS-1];
@@ -99,13 +108,12 @@ module plic #(
                     if (w_offset==4*i) r_priority[i-1] <= w_wdata;
                 end
                 for (i = 0; i < N_HARTS; i = i + 1) begin
-                    // TODO?: Interrupt ID 0 is reserved, shouldn't be enabled?
                     for (j = 0; j <= (N_INT_SRC-1)/32; j = j + 1) begin
-                        if (w_offset==29'h2000+29'h80*i+4*j) r_enable[i*((N_INT_SRC-1)/32+1)+j] <= w_wdata;
+                        if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_enable[i*((N_INT_SRC-1)/32+1)+j] <= {w_wdata[31:1], (j==0) ? 1'b0 : w_wdata[0]};
                     end
                 end
                 for (i = 0; i < N_HARTS; i = i + 1) begin
-                    if (w_offset==29'h200000+29'h1000*i) r_threshold[i] <= w_wdata;
+                    if (w_offset==THRS_BASE+THRS_SIZE*i) r_threshold[i] <= w_wdata;
                 end
             end
         end
@@ -119,7 +127,7 @@ module plic #(
         end else begin
             if (w_we) begin
                 for (i = 0; i < N_HARTS; i = i + 1) begin
-                    if (w_offset==29'h200004+29'h1000*i) r_claim[i] <= w_wdata;
+                    if (w_offset==CLAM_BASE+CLAM_SIZE*i) r_claim[i] <= w_wdata;
                 end
             end else begin
                 for (i = 0; i < N_HARTS; i = i + 1) begin
@@ -139,16 +147,16 @@ module plic #(
                 if (w_offset==4*i) r_rdata = r_priority[i-1];
             end
             for (i = 0; i <= (N_INT_SRC-1)/32; i = i + 1) begin
-                if (w_offset==29'h1000+4*i) r_rdata = w_pending[i];
+                if (w_offset==PEND_BASE+4*i) r_rdata = w_pending[i];
             end
             for (i = 0; i < N_HARTS; i = i + 1) begin
                 for (j = 0; j <= (N_INT_SRC-1)/32; j = j + 1) begin
-                    if (w_offset==29'h2000+29'h80*i+4*j) r_rdata = r_enable[i*((N_INT_SRC-1)/32+1)+j];
+                    if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_rdata = r_enable[i*((N_INT_SRC-1)/32+1)+j];
                 end
             end
             for (i = 0; i < N_HARTS; i = i + 1) begin
-                if (w_offset==29'h200000+29'h1000*i) r_rdata = r_threshold[i];
-                if (w_offset==29'h200004+29'h1000*i) r_rdata = r_claim[i];
+                if (w_offset==THRS_BASE+THRS_SIZE*i) r_rdata = r_threshold[i];
+                if (w_offset==CLAM_BASE+CLAM_SIZE*i) r_rdata = r_claim[i];
             end
         // end
     end
@@ -167,7 +175,7 @@ module plic #(
                 r_int_pending[i]       <= (!r_int_pending[i]) ? (r_int_pending_state[i]==S_PEND_IDLE) && w_int_src[i]
                                         : (w_claimed[i]) ? 1'b0 // corresponding claim read
                                         : r_int_pending[i];
-                r_int_pending_state[i] <= (r_int_pending_state[i]==S_PEND_IDLE) ? (!r_int_pending[i] && w_int_src)
+                r_int_pending_state[i] <= (r_int_pending_state[i]==S_PEND_IDLE) ? (!r_int_pending[i] && w_int_src[i])
                                         : (w_completed[i]) ? S_PEND_IDLE // corresponding claim write (completed)
                                         : r_int_pending_state[i];
             end
@@ -179,7 +187,7 @@ module plic #(
         w_claimed = 0;
         for (i = 0; i < N_INT_SRC; i = i + 1) begin
             for (j = 0; j < N_HARTS; j = j + 1) begin
-                w_claimed[i] = w_claimed[i] | ((w_offset==29'h200004+29'h1000*j) && (r_claim[j]==i+1)); // NOTE: Interrupt ID 0 is reserved
+                w_claimed[i] = w_claimed[i] | ((w_offset==CLAM_BASE+CLAM_SIZE*j) && (r_claim[j]==i+1)); // NOTE: Interrupt ID 0 is reserved
             end
             w_claimed[i] = w_re && w_claimed[i];
         end
@@ -190,7 +198,7 @@ module plic #(
         w_completed = 0;
         for (i = 0; i < N_INT_SRC; i = i + 1) begin
             for (j = 0; j < N_HARTS; j = j + 1) begin
-                w_completed[i] = w_completed[i] | ((w_offset==29'h200004+29'h1000*j) && (r_claim[j]==i+1)); // TODO: "If the completion ID does not match an interrupt source that is currently enabled for the target, the completion is silently ignored."
+                w_completed[i] = w_completed[i] | (w_offset==CLAM_BASE+CLAM_SIZE*j); // TODO: "If the completion ID does not match an interrupt source that is currently enabled for the target, the completion is silently ignored."
             end
             w_completed[i] = w_we && w_completed[i];
         end
