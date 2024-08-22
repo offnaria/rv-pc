@@ -64,8 +64,8 @@ module plic #(
     localparam CLAM_SIZE = 32'h1000;
 
     reg [W_INT_PRIO-1:0] r_priority  [0:N_INT_SRC-1];
-    reg [31:0]           w_pending   [0:(N_INT_SRC-1)/32]; // read only for MMIO
-    reg [31:0]           r_enable    [0:((N_INT_SRC-1)/32+1)*N_HARTS-1];
+    reg [31:0]           w_pending   [0:N_INT_SRC/32]; // read only for MMIO
+    reg [31:0]           r_enable    [0:(N_INT_SRC/32+1)*N_HARTS-1];
     reg [W_INT_PRIO-1:0] r_threshold [0:N_HARTS-1];
     reg [31:0]           r_claim     [0:N_HARTS-1];
 
@@ -96,7 +96,7 @@ module plic #(
             for (i = 0; i < N_INT_SRC; i = i + 1) begin
                 r_priority[i] <= 0;
             end
-            for (i = 0; i < ((N_INT_SRC-1)/32+1)*N_HARTS; i = i + 1) begin
+            for (i = 0; i < (N_INT_SRC/32+1)*N_HARTS; i = i + 1) begin
                 r_enable[i] <= 0;
             end
             for (i = 0; i < N_HARTS; i = i + 1) begin
@@ -108,8 +108,8 @@ module plic #(
                     if (w_offset==4*i) r_priority[i-1] <= w_wdata;
                 end
                 for (i = 0; i < N_HARTS; i = i + 1) begin
-                    for (j = 0; j <= (N_INT_SRC-1)/32; j = j + 1) begin
-                        if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_enable[i*((N_INT_SRC-1)/32+1)+j] <= {w_wdata[31:1], (j==0) ? 1'b0 : w_wdata[0]};
+                    for (j = 0; j <= N_INT_SRC/32; j = j + 1) begin
+                        if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_enable[i*(N_INT_SRC/32+1)+j] <= {w_wdata[31:1], (j==0) ? 1'b0 : w_wdata[0]};
                     end
                 end
                 for (i = 0; i < N_HARTS; i = i + 1) begin
@@ -150,8 +150,8 @@ module plic #(
                 if (w_offset==PEND_BASE+4*i) r_rdata = w_pending[i];
             end
             for (i = 0; i < N_HARTS; i = i + 1) begin
-                for (j = 0; j <= (N_INT_SRC-1)/32; j = j + 1) begin
-                    if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_rdata = r_enable[i*((N_INT_SRC-1)/32+1)+j];
+                for (j = 0; j <= N_INT_SRC/32; j = j + 1) begin
+                    if (w_offset==ENBL_BASE+ENBL_SIZE*i+4*j) r_rdata = r_enable[i*(N_INT_SRC/32+1)+j];
                 end
             end
             for (i = 0; i < N_HARTS; i = i + 1) begin
@@ -223,12 +223,10 @@ module plic #(
         end
         for (i = 0; i < N_HARTS; i = i + 1) begin
             for (j = 1; j <= N_INT_SRC; j = j + 1) begin
-                if (r_enable[((N_INT_SRC-1)/32+1)*i+j/32][j%32]) begin
+                if (r_enable[(N_INT_SRC/32+1)*i+j/32][j%32]) begin
                     if (w_int_prio[j-1] > w_max_prio[i]) begin
                         w_max_prio[i] = w_int_prio[j-1];
                         w_max_id[i]   = j;
-                    end else if (w_int_prio[j-1] == w_max_prio[i]) begin
-                        if (j < w_max_id[i]) w_max_id[i] = j;
                     end
                 end
             end

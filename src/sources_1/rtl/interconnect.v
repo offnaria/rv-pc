@@ -507,9 +507,9 @@ module m_interconnect #(
                         usb_ps2_clk, usb_ps2_data, w_ps2_mouse_we, w_ps2_mouse_data);
 
     /***********************************           PLIC         ***********************************/
-    assign w_plic_we = (w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_iswrite;
+    assign w_plic_we = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_iswrite;
     assign w_plic_wdata = w_data_wdata;
-    assign w_plic_re = (w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
+    assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
     // Important????
     // always@(posedge CLK) begin

@@ -453,7 +453,10 @@ module m_main(
 	.probe7(cluster.core0.ExMem_pc),
 	.probe8(cluster.core0.ExMem_ir),
 	.probe9(cluster.core0.mip),
-	.probe10({11'b0, plic0.r_int_pending, 11'b0, plic0.r_int_pending_state})
+	.probe10({11'b0, plic0.r_int_pending, 11'b0, plic0.r_int_pending_state}),
+	.probe11(plic0.r_enable[0]),
+	.probe12(plic0.r_threshold[0]),
+	.probe13(plic0.w_max_prio[0])
 );
 
     /*********************************          CLINT         *********************************/
