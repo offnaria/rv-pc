@@ -22,6 +22,7 @@ module m_main(
     output wire        w_led1_G,
     output wire        w_led1_R,
     // DRAM
+`ifdef SYNTHESIS
     inout  wire [15:0] ddr2_dq,
     inout  wire  [1:0] ddr2_dqs_n,
     inout  wire  [1:0] ddr2_dqs_p,
@@ -36,6 +37,7 @@ module m_main(
     output wire        ddr2_cs_n,
     output wire  [1:0] ddr2_dm,
     output wire        ddr2_odt,
+`endif
     // Button
     input  wire        w_btnu,
     input  wire        w_btnd,
@@ -53,11 +55,13 @@ module m_main(
     input  wire        w_rxerr_phy,
     output wire        w_clkin_phy,
     // SD card
+`ifdef SYNTHESIS
     input  wire        sd_cd,
     output wire        sd_rst,
     output wire        sd_sclk,
     inout  wire        sd_cmd,
     inout  wire [ 3:0] sd_dat,
+`endif
     // VGA
     output wire [ 3:0] vga_red,
     output wire [ 3:0] vga_green,
@@ -67,10 +71,10 @@ module m_main(
     // Mouse
     inout  wire        usb_ps2_clk,
     inout  wire        usb_ps2_data,
+    // Keyboard
 `ifdef CH559_USB
     input  wire        ch559_rx
 `else
-    // Keyboard
     inout  wire        pmod_ps2_clk,
     inout  wire        pmod_ps2_data
 `endif
