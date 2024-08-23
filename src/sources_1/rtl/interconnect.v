@@ -22,9 +22,6 @@ module m_interconnect #(
     output reg          r_finish,
     input  wire [31:0]  w_priv, w_satp, w_mstatus,
     input  wire [63:0]  w_mtime,
-    // input  wire [31:0]  w_mip,
-    // output wire [31:0]  w_wmip,
-    // output wire         w_plic_we,
     output wire         w_proc_busy,
     output wire [31:0]  w_pagefault,
     input  wire  [1:0]  w_tlb_req,
@@ -32,24 +29,6 @@ module m_interconnect #(
     output wire         w_txd,
     input  wire         w_rxd,
     output wire         w_init_done,
-    input  wire         mig_clk,
-    input  wire         mig_rst_x,
-    inout  wire [15:0]  ddr2_dq,
-    inout  wire  [1:0]  ddr2_dqs_n,
-    inout  wire  [1:0]  ddr2_dqs_p,
-    output wire [12:0]  ddr2_addr,
-    output wire  [2:0]  ddr2_ba,
-    output wire         ddr2_ras_n,
-    output wire         ddr2_cas_n,
-    output wire         ddr2_we_n,
-    output wire         ddr2_ck_p,
-    output wire         ddr2_ck_n,
-    output wire         ddr2_cke,
-    output wire         ddr2_cs_n,
-    output wire  [1:0]  ddr2_dm,
-    output wire         ddr2_odt,
-    output wire         o_clk,
-    output wire         o_rst_x,
     output wire  [7:0]  w_uart_data,
     output wire         w_uart_we,
     input  wire         w_init_stage,
@@ -72,9 +51,18 @@ module m_interconnect #(
 `endif
     output wire [2:0]   w_mc_mode,
     output wire         w_tlb_busy,
-    output wire         w_dram_busy,
+    // DRAM
+    input  wire         w_dram_busy,
+    output wire         w_dram_rd_en,
+    output wire         w_dram_wr_en,
+    output wire [31:0]  w_dram_addr_t2,
+    output wire [31:0]  w_dram_wdata_t,
+    input  wire [127:0] w_dram_rdata128,
+    output wire [2:0]   w_dram_ctrl_t,
+    // Keyboard
     output wire         w_ps2_kbd_we,
     output wire [ 7:0]  w_ps2_kbd_data,
+    // Mouse
     output wire         w_ps2_mouse_we,
     output wire [ 7:0]  w_ps2_mouse_data,
     // SD card controller
@@ -248,11 +236,11 @@ module m_interconnect #(
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :
                                 (w_iscode && !w_tlb_busy)   ? `FUNCT3_LW____    : w_mem_ctrl;
-    assign      w_insn_data =   w_dram_odata128;
+    assign      w_insn_data =   w_dram_rdata128;
 
     wire        w_dram_aces = (w_dram_addr[31:28] == 8 || w_dram_addr[31:28] == 0);
 
-    wire        w_dram_le   =
+    assign w_dram_rd_en =
                     (w_dram_busy)  ? 0 :
                     (!w_dram_aces) ? 0 :
                     (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
@@ -368,7 +356,7 @@ module m_interconnect #(
             end
         endcase
     end
-    assign w_data_data = (is_dram_data) ? w_dram_odata128 : {96'h0, r_data_data};
+    assign w_data_data = (is_dram_data) ? w_dram_rdata128 : {96'h0, r_data_data};
     assign w_is_dram_data = is_dram_data;
 
     /***********************************          VirtIO        ***********************************/
@@ -656,27 +644,25 @@ module m_interconnect #(
 `endif
     /**********************************************************************************************/
     wire [31:0]  w_dram_addr_t  = w_dram_addr & 32'h7ffffff;
-    wire [31:0]  w_dram_addr_t2 =
-                    (r_init_state == 1) ? r_zeroaddr     :
-                    (r_init_state == 2) ? r_initaddr     :
-                    (r_init_state == 3) ? r_initaddr3    : w_dram_addr_t;
+    assign w_dram_addr_t2 = (r_init_state == 1) ? r_zeroaddr  :
+                            (r_init_state == 2) ? r_initaddr  :
+                            (r_init_state == 3) ? r_initaddr3 : w_dram_addr_t;
 
-    wire [31:0]  w_dram_wdata_t   =   (r_init_state == 1) ? 32'b0 :
-                                    (r_init_state == 4) ? w_dram_wdata : w_pl_init_data;
-    wire         w_dram_we_t      =   (w_pte_we || w_dram_we) && !w_dram_busy;
-    wire [2:0]   w_dram_ctrl_t  = (!w_init_done) ? `FUNCT3_SW____ : w_dram_ctrl;
+    assign w_dram_wdata_t = (r_init_state == 1) ? 32'b0 :
+                            (r_init_state == 4) ? w_dram_wdata : w_pl_init_data;
+    wire w_dram_we_t = (w_pte_we || w_dram_we) && !w_dram_busy;
+    assign w_dram_ctrl_t = (!w_init_done) ? `FUNCT3_SW____ : w_dram_ctrl;
 
     reg  [31:0] r_addr = 0;
     reg  [2 :0] r_ctrl = 0;
     always @ (posedge CLK) begin
-        if (w_dram_we_t | w_dram_le) begin
+        if (w_dram_we_t | w_dram_rd_en) begin
             r_addr <= w_dram_addr_t2;
             r_ctrl <= w_dram_ctrl_t;
         end
     end
-    wire [127:0] w_dram_odata128;
 
-    wire[127:0] w_odata_t1 = (w_dram_odata128 >> {r_addr[3:0], 3'b0});
+    wire[127:0] w_odata_t1 = (w_dram_rdata128 >> {r_addr[3:0], 3'b0});
     wire [31:0] w_odata_t2 = w_odata_t1[31:0];
 
     wire [31:0] w_ld_lb = {{24{w_odata_t2[ 7]&(~r_ctrl[2])}}, w_odata_t2[ 7:0]};
@@ -685,51 +671,12 @@ module m_interconnect #(
     assign w_dram_odata = (r_ctrl[1:0]==0) ? w_ld_lb :
                     (r_ctrl[1:0]==1) ? w_ld_lh : w_odata_t2;
 
-/**************************************************************************************************/
-
-`ifndef SYNTHESIS
-    m_dram_sim#(`MEM_SIZE) idbmem(CLK, w_dram_addr_t2, w_dram_odata, w_dram_we_t, w_dram_le,
-                                    w_dram_wdata_t, w_dram_ctrl_t, w_dram_busy, w_mtime[31:0]);
-`else
-    wire calib_done;
-    DRAM_conRV dram_con (
-                                // user interface ports
-                               .i_rd_en(w_dram_le),
-                               .i_wr_en(w_zero_we || w_pl_init_we || w_dram_we_t),
-                               .i_addr(w_dram_addr_t2),
-                               .i_data(w_dram_wdata_t),
-                               .o_data(w_dram_odata128),
-                               .o_busy(w_dram_busy),
-                               .i_ctrl(w_dram_ctrl_t),
-                               // input clk, rst (active-low)
-                               .mig_clk(mig_clk),
-                               .mig_rst_x(mig_rst_x),
-                               // memory interface ports
-                               .ddr2_dq(ddr2_dq),
-                               .ddr2_dqs_n(ddr2_dqs_n),
-                               .ddr2_dqs_p(ddr2_dqs_p),
-                               .ddr2_addr(ddr2_addr),
-                               .ddr2_ba(ddr2_ba),
-                               .ddr2_ras_n(ddr2_ras_n),
-                               .ddr2_cas_n(ddr2_cas_n),
-                               .ddr2_we_n(ddr2_we_n),
-                               .ddr2_ck_p(ddr2_ck_p),
-                               .ddr2_ck_n(ddr2_ck_n),
-                               .ddr2_cke(ddr2_cke),
-                               .ddr2_cs_n(ddr2_cs_n),
-                               .ddr2_dm(ddr2_dm),
-                               .ddr2_odt(ddr2_odt),
-                               // output clk, rst (active-low)
-                               .o_clk(o_clk),
-                               .o_rst_x(o_rst_x),
-                               // other
-                               .o_init_calib_complete(calib_done)
-                               );
-`endif
-
     /*********************************          CLINT         *********************************/
     assign w_clint_we = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);
     assign w_clint_wdata = w_data_wdata;
+
+    /***********************************      DRAM     ***********************************/
+    assign w_dram_wr_en = w_zero_we || w_pl_init_we || w_dram_we_t;
 
 endmodule
 /**************************************************************************************************/

@@ -152,7 +152,7 @@ module m_main(
     end
 
 
-    wire w_tlb_busy, w_dram_busy;
+    wire w_tlb_busy;
     reg [63:0] tlb_cnt = 0, dram_cnt = 0;
     always @ (posedge CORE_CLK) begin
         if (!RST_X) begin
@@ -248,27 +248,6 @@ module m_main(
         .w_txd          (w_txd),
         .w_rxd          (w_rxd),
         .w_init_done    (w_init_done),
-        // input clk, rst (active-low)
-        .mig_clk        (mig_clk),
-        .mig_rst_x      (!RST),
-        // memory interface ports
-        .ddr2_dq        (ddr2_dq),
-        .ddr2_dqs_n     (ddr2_dqs_n),
-        .ddr2_dqs_p     (ddr2_dqs_p),
-        .ddr2_addr      (ddr2_addr),
-        .ddr2_ba        (ddr2_ba),
-        .ddr2_ras_n     (ddr2_ras_n),
-        .ddr2_cas_n     (ddr2_cas_n),
-        .ddr2_we_n      (ddr2_we_n),
-        .ddr2_ck_p      (ddr2_ck_p),
-        .ddr2_ck_n      (ddr2_ck_n),
-        .ddr2_cke       (ddr2_cke),
-        .ddr2_cs_n      (ddr2_cs_n),
-        .ddr2_dm        (ddr2_dm),
-        .ddr2_odt       (ddr2_odt),
-        // output clk, rst (active-low)
-        .o_clk          (CORE_CLK),
-        .o_rst_x        (RST_X2),
         .w_uart_data    (w_uart_data),
         .w_uart_we      (w_uart_we),
         .w_init_stage   (w_init_stage),
@@ -291,7 +270,14 @@ module m_main(
         .w_init_start   (w_init_start),
         .w_mc_mode      (w_mc_mode),
         .w_tlb_busy     (w_tlb_busy),
+        // DRAM
         .w_dram_busy    (w_dram_busy),
+        .w_dram_rd_en   (w_dram_rd_en),
+        .w_dram_wr_en   (w_dram_wr_en),
+        .w_dram_addr_t2 (w_dram_addr),
+        .w_dram_wdata_t (w_dram_wdata),
+        .w_dram_rdata128(w_dram_rdata128),
+        .w_dram_ctrl_t  (w_dram_ctrl),
         .w_ps2_kbd_we   (w_kbd_we),
         .w_ps2_kbd_data (w_kbd_data),
         .w_ps2_mouse_we (w_mouse_we),
@@ -358,6 +344,7 @@ module m_main(
     wire        loader_done;
     wire [31:0] sdctrl_rdata;
     wire        sdctrl_busy;
+`ifdef SYNTHESIS
     periph_sdcard periph_sdcard(
         .CLK         (CORE_CLK),
         .RST_X       (RST_X),
@@ -380,6 +367,9 @@ module m_main(
         .w_mc_aces   (interconnect.w_mc_aces),
         .w_mem_we    (interconnect.w_mem_we)
     );
+`else
+    // TODO: SD Card Simulation Model
+`endif
 
 /*********** Chika Chika **************************/
     reg  r_led1_B=0,r_led1_G=0,r_led1_R=0;
@@ -515,6 +505,53 @@ module m_main(
         .vga_blue(vga_blue),
         .vga_green(vga_green)
     );
+
+    /***********************************      DRAM     ***********************************/
+    wire         w_dram_rd_en;
+    wire         w_dram_wr_en;
+    wire [31:0]  w_dram_addr;
+    wire [31:0]  w_dram_wdata;
+    wire [127:0] w_dram_rdata128;
+    wire         w_dram_busy;
+    wire [2:0]   w_dram_ctrl;
+`ifdef SYNTHESIS
+    wire calib_done;
+    DRAM_conRV dram_con (
+        // user interface ports
+        .i_rd_en(w_dram_rd_en),
+        .i_wr_en(w_dram_wr_en),
+        .i_addr(w_dram_addr),
+        .i_data(w_dram_wdata),
+        .o_data(w_dram_rdata128),
+        .o_busy(w_dram_busy),
+        .i_ctrl(w_dram_ctrl),
+        // input clk, rst (active-low)
+        .mig_clk(mig_clk),
+        .mig_rst_x(!RST),
+        // memory interface ports
+        .ddr2_dq(ddr2_dq),
+        .ddr2_dqs_n(ddr2_dqs_n),
+        .ddr2_dqs_p(ddr2_dqs_p),
+        .ddr2_addr(ddr2_addr),
+        .ddr2_ba(ddr2_ba),
+        .ddr2_ras_n(ddr2_ras_n),
+        .ddr2_cas_n(ddr2_cas_n),
+        .ddr2_we_n(ddr2_we_n),
+        .ddr2_ck_p(ddr2_ck_p),
+        .ddr2_ck_n(ddr2_ck_n),
+        .ddr2_cke(ddr2_cke),
+        .ddr2_cs_n(ddr2_cs_n),
+        .ddr2_dm(ddr2_dm),
+        .ddr2_odt(ddr2_odt),
+        // output clk, rst (active-low)
+        .o_clk(CORE_CLK),
+        .o_rst_x(RST_X2),
+        // other
+        .o_init_calib_complete(calib_done)
+        );
+`else
+    // TODO: DRAM Simulation Model
+`endif
 
 endmodule
 
