@@ -52,7 +52,6 @@ module m_interconnect #(
     output wire         o_rst_x,
     output wire  [7:0]  w_uart_data,
     output wire         w_uart_we,
-    output wire [15:0]  w_led,
     input  wire         w_init_stage,
     output wire [31:0]  w_checksum,
     input  wire         w_debug_btnd,
@@ -727,9 +726,6 @@ module m_interconnect #(
                                .o_init_calib_complete(calib_done)
                                );
 `endif
-
-    assign w_led = (w_proc_busy << 12) | (r_mc_mode << 8)
-                    | ({w_pl_init_done, r_disk_done, r_bbl_done, r_zero_done} << 4) | r_init_state;
 
     /*********************************          CLINT         *********************************/
     assign w_clint_we = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);

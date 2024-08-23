@@ -73,9 +73,6 @@ module m_main(
 
     wire RST_X_IN = 1;
 
-    wire [15:0] w_led_t; // temporal w_led
-
-
     reg [31:0] r_cnt=0;
     reg        r_time_led=0;
     always@(posedge CORE_CLK) r_cnt <= (r_cnt>=(64*1000000/2-1)) ? 0 : r_cnt+1;
@@ -213,6 +210,9 @@ module m_main(
     wire w_finish;
     wire w_halt;
 
+    wire [15:0] w_led_t = (w_busy << 12) | (w_mc_mode << 8)
+                        | ({interconnect.w_pl_init_done, interconnect.r_disk_done, interconnect.r_bbl_done, interconnect.r_zero_done} << 4) | interconnect.r_init_state;
+
     // stop and count
     always@(posedge CORE_CLK) begin
         if(w_btnc | w_halt | w_finish | (w_core_odata > `TIMEOUT)) r_stop <= 1;
@@ -271,7 +271,6 @@ module m_main(
         .o_rst_x        (RST_X2),
         .w_uart_data    (w_uart_data),
         .w_uart_we      (w_uart_we),
-        .w_led          (w_led_t),
         .w_init_stage   (w_init_stage),
         .w_checksum     (w_checksum),
         .w_debug_btnd   (w_btnd),
