@@ -9,33 +9,40 @@
 /**************************************************************************************************/
 module m_main(
     input  wire        CLK,
+    // UART
     input  wire        w_rxd,
     output wire        w_txd,
+    // LED
     output wire [15:0] w_led,
+    // 7seg
     output reg   [7:0] r_sg,
     output reg   [7:0] r_an,
+    // RGB LED
     output wire        w_led1_B,
     output wire        w_led1_G,
     output wire        w_led1_R,
-    inout  wire [15:0] ddr2_dq,    ///// for DRAM
-    inout  wire  [1:0] ddr2_dqs_n, //
-    inout  wire  [1:0] ddr2_dqs_p, //
-    output wire [12:0] ddr2_addr,  //
-    output wire  [2:0] ddr2_ba,    //
-    output wire        ddr2_ras_n, //
-    output wire        ddr2_cas_n, //
-    output wire        ddr2_we_n,  //
-    output wire        ddr2_ck_p,  //
-    output wire        ddr2_ck_n,  //
-    output wire        ddr2_cke,   //
-    output wire        ddr2_cs_n,  //
-    output wire  [1:0] ddr2_dm,    //
-    output wire        ddr2_odt,   //
+    // DRAM
+    inout  wire [15:0] ddr2_dq,
+    inout  wire  [1:0] ddr2_dqs_n,
+    inout  wire  [1:0] ddr2_dqs_p,
+    output wire [12:0] ddr2_addr,
+    output wire  [2:0] ddr2_ba,
+    output wire        ddr2_ras_n,
+    output wire        ddr2_cas_n,
+    output wire        ddr2_we_n,
+    output wire        ddr2_ck_p,
+    output wire        ddr2_ck_n,
+    output wire        ddr2_cke,
+    output wire        ddr2_cs_n,
+    output wire  [1:0] ddr2_dm,
+    output wire        ddr2_odt,
+    // Button
     input  wire        w_btnu,
     input  wire        w_btnd,
     input  wire        w_btnl,
     input  wire        w_btnr,
     input  wire        w_btnc,
+    // Ethernet
     output wire        w_mdio_phy,
     output reg         r_mdc_phy = 0,
     output reg         r_rstn_phy,
@@ -45,21 +52,25 @@ module m_main(
     input  wire  [1:0] w_rxd_phy,
     input  wire        w_rxerr_phy,
     output wire        w_clkin_phy,
+    // SD card
     input  wire        sd_cd,
     output wire        sd_rst,
     output wire        sd_sclk,
     inout  wire        sd_cmd,
     inout  wire [ 3:0] sd_dat,
+    // VGA
     output wire [ 3:0] vga_red,
     output wire [ 3:0] vga_green,
     output wire [ 3:0] vga_blue,
     output wire        vga_h_sync,
     output wire        vga_v_sync,
+    // Mouse
     inout  wire        usb_ps2_clk,
     inout  wire        usb_ps2_data,
 `ifdef CH559_USB
     input  wire        ch559_rx
 `else
+    // Keyboard
     inout  wire        pmod_ps2_clk,
     inout  wire        pmod_ps2_data
 `endif
