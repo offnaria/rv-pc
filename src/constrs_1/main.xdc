@@ -21,7 +21,7 @@ create_generated_clock -name mig_in_clk [get_pins m_clkgen0/inst/mmcm_adv_inst/C
 set_clock_groups -asynchronous -group {mig_in_clk}
 
 #create_generated_clock -name core_clk [get_pins mem_ctrl/dram_con/dram/dram/dram_con_witout_cache/clkgen1/inst/mmcm_adv_inst/CLKOUT0]
-create_generated_clock -name core_clk [get_pins interconnect/dram_con/dram/dram/dram_con_witout_cache/clkgen1/inst/mmcm_adv_inst/CLKOUT0]
+create_generated_clock -name core_clk [get_pins dram_con/dram/dram/dram_con_witout_cache/clkgen1/inst/mmcm_adv_inst/CLKOUT0]
 set_clock_groups -asynchronous -group {core_clk}
 
 ###############################################################################################
