@@ -121,16 +121,32 @@ module m_main(
     wire        w_init_stage;
 
     // Clock
-    wire CORE_CLK, w_locked;
-    wire mig_clk, RST_X2;
-    clk_wiz_0 m_clkgen0 (.clk_in1(CLK), .resetn(RST_X_IN), .clk_out1(mig_clk), .locked(w_locked));
+    wire CORE_CLK, clk_50mhz, w_locked;
+    wire RST_X2;
 
-    // 50MHz Clock for SD card and Ethernet
-    wire clk_50mhz, w_locked_50mhz;
-    clk_wiz_2 clkgen2 (.clk_in1(CLK), .resetn(RST_X_IN), .clk_out1(clk_50mhz), .locked(w_locked_50mhz));
+`ifdef SYNTHESIS
+    wire mig_clk, pix_clk;
+    clk_wiz_0 m_clkgen0 (
+        .clk_in1(CLK),
+        .resetn(RST_X_IN),
+        .locked(w_locked),
+        .clk_out1(mig_clk),   // 200MHz for MIG
+        .clk_out2(clk_50mhz), // 50MHz for SD card and Ethernet
+        .clk_out3(pix_clk)    // 25MHz for framebuffer
+    );
+`else
+    assign CORE_CLK = CLK;
+    reg r_50mhz_gen = 1'b0;
+    always @(posedge CLK) begin
+        r_50mhz_gen <= ~r_50mhz_gen;
+    end
+    assign clk_50mhz = r_50mhz_gen;
+    assign w_locked = 1'b1;
+    assign RST_X2 = 1'b1;
+`endif
 
     // Reset
-    wire RST        = ~w_locked || ~w_locked_50mhz;
+    wire RST        = ~w_locked;
     wire RST_X      = ~RST & RST_X2;
     wire CORE_RST_X = RST_X & w_init_done;
 
@@ -504,11 +520,10 @@ module m_main(
     endgenerate
     
     /***********************************      Simple Framebuffer     ***********************************/
-    wire pix_clk;
     wire w_fb_we;
     wire [31:0] w_fb_wdata;
     wire [31:0] w_fb_rdata;
-    clk_wiz_3 m_clkgen3 (.clk_in1(CLK), .reset(), .clk_out1(pix_clk), .locked()); // 100MHz to 25MHz
+`ifdef SYNTHESIS
     periph_framebuffer periph_framebuffer (
         .CLK(CORE_CLK),
         .pix_clk(pix_clk),
@@ -522,6 +537,9 @@ module m_main(
         .vga_blue(vga_blue),
         .vga_green(vga_green)
     );
+`else
+    // TODO: Simple Framebuffer Simulation Model
+`endif
 
     /***********************************      DRAM     ***********************************/
     wire         w_dram_rd_en;

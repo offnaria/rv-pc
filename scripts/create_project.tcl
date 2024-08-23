@@ -159,26 +159,6 @@ set obj [get_filesets sources_1]
 set_property -name "top" -value "m_main" -objects $obj
 set_property -name "top_auto_set" -value "0" -objects $obj
 
-# Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
-# Add local files from the original project (-no_copy_sources specified)
-set files [list \
- [file normalize "${origin_dir}/src/sources_1/ip/clk_wiz_0/clk_wiz_0.xci" ]\
-]
-set added_files [add_files -fileset sources_1 $files]
-
-# Set 'sources_1' fileset file properties for remote files
-# None
-
-# Set 'sources_1' fileset file properties for local files
-set file "clk_wiz_0/clk_wiz_0.xci"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-if { ![get_property "is_locked" $file_obj] } {
-  set_property -name "synth_checkpoint_mode" -value "Singular" -objects $file_obj
-}
-
 
 # Set 'sources_1' fileset object
 set obj [get_filesets sources_1]
@@ -193,48 +173,6 @@ set added_files [add_files -fileset sources_1 $files]
 
 # Set 'sources_1' fileset file properties for local files
 set file "mig_7series_0/mig_7series_0.xci"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-if { ![get_property "is_locked" $file_obj] } {
-  set_property -name "synth_checkpoint_mode" -value "Singular" -objects $file_obj
-}
-
-
-# Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
-# Add local files from the original project (-no_copy_sources specified)
-set files [list \
- [file normalize "${origin_dir}/src/sources_1/ip/clk_wiz_2/clk_wiz_2.xci" ]\
-]
-set added_files [add_files -fileset sources_1 $files]
-
-# Set 'sources_1' fileset file properties for remote files
-# None
-
-# Set 'sources_1' fileset file properties for local files
-set file "clk_wiz_2/clk_wiz_2.xci"
-set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
-set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
-set_property -name "registered_with_manager" -value "1" -objects $file_obj
-if { ![get_property "is_locked" $file_obj] } {
-  set_property -name "synth_checkpoint_mode" -value "Singular" -objects $file_obj
-}
-
-
-# Set 'sources_1' fileset object
-set obj [get_filesets sources_1]
-# Add local files from the original project (-no_copy_sources specified)
-set files [list \
- [file normalize "${origin_dir}/src/sources_1/ip/clk_wiz_3/clk_wiz_3.xci" ]\
-]
-set added_files [add_files -fileset sources_1 $files]
-
-# Set 'sources_1' fileset file properties for remote files
-# None
-
-# Set 'sources_1' fileset file properties for local files
-set file "clk_wiz_3/clk_wiz_3.xci"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "generate_files_for_reference" -value "0" -objects $file_obj
 set_property -name "registered_with_manager" -value "1" -objects $file_obj
@@ -597,7 +535,25 @@ move_dashboard_gadget -name {methodology_1} -row 2 -col 1
 
 update_compile_order -fileset sources_1
 
-upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_0] -log ip_upgrade.log
+create_ip -name clk_wiz -vendor xilinx.com -library ip -version 6.0 -module_name clk_wiz_0
+set_property -dict [list \
+  CONFIG.CLKOUT1_JITTER {114.829} \
+  CONFIG.CLKOUT1_REQUESTED_OUT_FREQ {200} \
+  CONFIG.CLKOUT2_JITTER {151.636} \
+  CONFIG.CLKOUT2_PHASE_ERROR {98.575} \
+  CONFIG.CLKOUT2_REQUESTED_OUT_FREQ {50} \
+  CONFIG.CLKOUT2_USED {true} \
+  CONFIG.CLKOUT3_JITTER {175.402} \
+  CONFIG.CLKOUT3_PHASE_ERROR {98.575} \
+  CONFIG.CLKOUT3_REQUESTED_OUT_FREQ {25} \
+  CONFIG.CLKOUT3_USED {true} \
+  CONFIG.MMCM_CLKOUT0_DIVIDE_F {5.000} \
+  CONFIG.MMCM_CLKOUT1_DIVIDE {20} \
+  CONFIG.MMCM_CLKOUT2_DIVIDE {40} \
+  CONFIG.NUM_OUT_CLKS {3} \
+  CONFIG.RESET_PORT {resetn} \
+  CONFIG.RESET_TYPE {ACTIVE_LOW} \
+] [get_ips clk_wiz_0]
 export_ip_user_files -of_objects [get_ips clk_wiz_0] -no_script -sync -force -quiet
 generate_target {instantiation_template} [get_ips clk_wiz_0]
 generate_target {synthesis simulation} [get_ips clk_wiz_0]
@@ -611,20 +567,6 @@ generate_target {synthesis simulation} [get_ips clk_wiz_1]
 create_ip_run [get_ips clk_wiz_1] -force
 launch_runs clk_wiz_1_synth_1
 
-upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_2] -log ip_upgrade.log
-export_ip_user_files -of_objects [get_ips clk_wiz_2] -no_script -sync -force -quiet
-generate_target {instantiation_template} [get_ips clk_wiz_2]
-generate_target {synthesis simulation} [get_ips clk_wiz_2]
-create_ip_run [get_ips clk_wiz_2] -force
-launch_runs clk_wiz_2_synth_1
-
-upgrade_ip -vlnv xilinx.com:ip:clk_wiz:6.0 [get_ips  clk_wiz_3] -log ip_upgrade.log
-export_ip_user_files -of_objects [get_ips clk_wiz_3] -no_script -sync -force -quiet
-generate_target {instantiation_template} [get_ips clk_wiz_3]
-generate_target {synthesis simulation} [get_ips clk_wiz_3]
-create_ip_run [get_ips clk_wiz_3] -force
-launch_runs clk_wiz_3_synth_1
-
 export_ip_user_files -of_objects [get_ips mig_7series_0] -no_script -sync -force -quiet
 generate_target {instantiation_template} [get_ips mig_7series_0]
 generate_target {synthesis simulation} [get_ips mig_7series_0]
@@ -633,8 +575,6 @@ launch_runs mig_7series_0_synth_1
 
 wait_on_runs clk_wiz_0_synth_1
 wait_on_runs clk_wiz_1_synth_1
-wait_on_runs clk_wiz_2_synth_1
-wait_on_runs clk_wiz_3_synth_1
 wait_on_runs mig_7series_0_synth_1
 
 exit
