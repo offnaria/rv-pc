@@ -443,25 +443,27 @@ module m_main(
         .w_eip(w_eip)
     );
 
-    ila_1 your_instance_name (
-	.clk(CORE_CLK), // input wire clk
-
-
-	.probe0(w_offset), // input wire [29:0]  probe0  
-	.probe1(w_plic_we), // input wire [0:0]  probe1 
-	.probe2(w_plic_wdata), // input wire [31:0]  probe2 
-	.probe3(w_plic_re), // input wire [0:0]  probe3 
-	.probe4(w_plic_rdata), // input wire [31:0]  probe4 
-	.probe5(w_int_src), // input wire [4:0]  probe5 
-	.probe6(w_eip), // input wire [0:0]  probe6
-	.probe7(cluster.core0.ExMem_pc),
-	.probe8(cluster.core0.ExMem_ir),
-	.probe9(cluster.core0.mip),
-	.probe10({11'b0, plic0.r_int_pending, 11'b0, plic0.r_int_pending_state}),
-	.probe11(plic0.r_enable[0]),
-	.probe12(plic0.r_threshold[0]),
-	.probe13(plic0.w_max_prio[0])
-);
+    generate
+        if (DEBUG) begin
+            ila_1 ila1 (
+                .clk(CORE_CLK), // input wire clk
+                .probe0(w_offset), // input wire [29:0]  probe0  
+                .probe1(w_plic_we), // input wire [0:0]  probe1 
+                .probe2(w_plic_wdata), // input wire [31:0]  probe2 
+                .probe3(w_plic_re), // input wire [0:0]  probe3 
+                .probe4(w_plic_rdata), // input wire [31:0]  probe4 
+                .probe5(w_int_src), // input wire [4:0]  probe5 
+                .probe6(w_eip), // input wire [0:0]  probe6
+                .probe7(cluster.core0.ExMem_pc),
+                .probe8(cluster.core0.ExMem_ir),
+                .probe9(cluster.core0.mip),
+                .probe10({11'b0, plic0.r_int_pending, 11'b0, plic0.r_int_pending_state}),
+                .probe11(plic0.r_enable[0]),
+                .probe12(plic0.r_threshold[0]),
+                .probe13(plic0.w_max_prio[0])
+            );
+        end
+    endgenerate
 
     /*********************************          CLINT         *********************************/
     wire w_clint_we;
