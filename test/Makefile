@@ -13,12 +13,13 @@ LDFLAGS  := -fuse-ld=$(LD)
 
 PREFIX_NAME := rvpc_sim
 BUILD_BIN   := $(BUILD_DIR)/$(PREFIX_NAME)
+INITMEM_BIN := ../diskimage/initmem.bin
 
 .PHONY: all run clean
 all: $(BUILD_BIN)
 
 run: $(BUILD_BIN)
-	$<
+	$< $(INITMEM_BIN)
 
 # $(BUILD_BIN): $(OBJECTS)
 # 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
