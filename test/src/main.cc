@@ -23,9 +23,10 @@ public:
         std::fill(ram, ram + DRAM_SIZE/sizeof(std::uint32_t), 0);
     };
     void dram_step(VL_OUT8(&dram_rd_en,0,0), VL_OUT8(&dram_wr_en,0,0), VL_IN8(&dram_busy,0,0), VL_OUT8(&dram_ctrl,2,0), VL_OUT(&dram_addr,31,0), VL_OUT(&dram_wdata,31,0), VL_INW(&dram_rdata128,127,0,4)) {
+        const auto word_idx = dram_addr >> 2;
         if (dram_rd_en) {
             // Read from DRAM
-            const auto longword_idx = dram_addr >> 4;
+            const auto longword_idx = word_idx & ~0x3;
             dram_rdata128.at(0) = ram[longword_idx];
             dram_rdata128.at(1) = ram[longword_idx+1];
             dram_rdata128.at(2) = ram[longword_idx+2];
@@ -33,16 +34,18 @@ public:
             // std::print("DRAM read: addr={:08x}, data={:08x} {:08x} {:08x} {:08x}\n", dram_addr, ram[longword_idx], ram[longword_idx+1], ram[longword_idx+2], ram[longword_idx+3]);
         } else if (dram_wr_en) {
             // Write to DRAM
-            const auto word_idx = dram_addr >> 2;
             if (dram_ctrl==0) {
                 ram[word_idx] = dram_wdata;
             } else {
                 const std::uint8_t *dram_wdata_ptr = reinterpret_cast<std::uint8_t*>(&dram_wdata);
                 std::uint8_t *ram_ptr = reinterpret_cast<std::uint8_t*>(&ram[word_idx]);
-                if ((dram_ctrl & (1 << 0)) == 0) ram_ptr[0] = dram_wdata_ptr[0];
-                if ((dram_ctrl & (1 << 1)) == 0) ram_ptr[1] = dram_wdata_ptr[1];
-                if ((dram_ctrl & (1 << 2)) == 0) ram_ptr[2] = dram_wdata_ptr[2];
-                if ((dram_ctrl & (1 << 3)) == 0) ram_ptr[3] = dram_wdata_ptr[3];
+                if (dram_ctrl==0) ram_ptr[dram_addr & 0x3] = dram_wdata_ptr[0];
+                else if (dram_ctrl==1) {
+                    ram_ptr[dram_addr & 0x2] = dram_wdata_ptr[0];
+                    ram_ptr[(dram_addr & 0x2)+1] = dram_wdata_ptr[1];
+                } else {
+                    ram[word_idx] = dram_wdata;
+                }
             }
             // std::print("DRAM write: addr={:08x}, data={:08x}\n", dram_addr, dram_wdata);
         }
@@ -108,7 +111,7 @@ int main(int argc, char *argv[]) {
             tfp->dump(cnt);
             ++cnt;
         }
-        if (cnt > 1000000) {
+        if (cnt > 100000) {
             std::print("Simulation timed out\n");
             break;
         }
