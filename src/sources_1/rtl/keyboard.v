@@ -166,7 +166,7 @@ module m_keyboard(CLK, RST_X, w_we, w_addr_t, w_idata, w_iirq, w_odata,
     always@(posedge CLK) begin
         if (w_ps2_we) begin
             if (w_ps2_data == 8'hf0) begin
-                key_release = 1;
+                key_release <= 1;
             end else begin
                 if(r_cnts < 16) begin
                     fifo[r_tail] <= (key_release) ? {8'h0, w_ps2_data}: {8'h1, w_ps2_data};

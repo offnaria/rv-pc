@@ -13,11 +13,12 @@ module periph_sdcard (
 
     input  wire        clk_50mhz,
 
-    input  wire        sd_cd,
-    output wire        sd_rst,
-    output wire        sd_sclk,
-    inout  wire        sd_cmd,
-    inout  wire [ 3:0] sd_dat,
+    output wire [40:0] sdcram_addr,
+    output wire        sdcram_ren,
+    output wire [ 3:0] sdcram_wen,
+    output wire [31:0] sdcram_wdata,
+    input  wire [31:0] sdcram_rdata,
+    input  wire        sdcram_busy,
 
     output wire [31:0] sdctrl_rdata,
     output wire        sdctrl_busy,
@@ -28,16 +29,6 @@ module periph_sdcard (
     input wire [ 1:0]  w_mc_aces,
     input wire         w_mem_we
 );
-    
-    wire [40:0] sdcram_addr;
-    wire        sdcram_ren;
-    wire [ 3:0] sdcram_wen;
-    wire [31:0] sdcram_wdata;
-    wire [31:0] sdcram_rdata;
-    wire        sdcram_busy;
-    wire [ 2:0] sdcram_state;
-    wire [ 2:0] sdi_state;
-    wire [ 5:0] sdc_state;
 
     wire [40:0] ctrl_sdcram_addr;
     wire        ctrl_sdcram_ren;
@@ -67,38 +58,6 @@ module periph_sdcard (
     assign sdcram_ren   = (loader_done) ? ctrl_sdcram_ren   : loader_sdcram_ren  ;
     assign sdcram_wen   = (loader_done) ? ctrl_sdcram_wen   : 0                  ;
     assign sdcram_wdata = (loader_done) ? ctrl_sdcram_wdata : 0                  ;
-
-
-    sdcram#(
-        .CACHE_DEPTH(2),
-        .BLOCK_NUM(8),
-        .POLLING_CYCLES(1024)
-    )sdcram_0(
-        .i_sys_clk(CLK),
-        .i_sys_rst(!RST_X),
-        .i_sd_clk(clk_50mhz),
-        .i_sd_rst(!RST_X),
-
-        // for user interface
-        .i_sdcram_addr(sdcram_addr),
-        .i_sdcram_ren(sdcram_ren),
-        .i_sdcram_wen(sdcram_wen),
-        .i_sdcram_wdata(sdcram_wdata),
-        .o_sdcram_rdata(sdcram_rdata),
-        .o_sdcram_busy(sdcram_busy),
-
-        // for debug
-        .sdcram_state(sdcram_state),
-        .sdi_state(sdi_state),
-        .sdc_state(sdc_state),
-
-        // for sd
-        .sd_cd(sd_cd),
-        .sd_rst(sd_rst),
-        .sd_sclk(sd_sclk),
-        .sd_cmd(sd_cmd),
-    	.sd_dat(sd_dat)
-    );
 
     // SDCRAM Controller
 

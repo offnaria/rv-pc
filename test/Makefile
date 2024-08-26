@@ -5,23 +5,37 @@ SRC_DIR   := src
 BUILD_DIR := build
 INC_DIR   := $(SRC_DIR)
 
+SOURCES := $(wildcard $(SRC_DIR)/*.cc)
+OBJECTS := $(patsubst $(SRC_DIR)/%.cc,$(BUILD_DIR)/%.o,$(SOURCES))
+
 CXXFLAGS := -O2 -Wall -std=c++23 -stdlib=libc++ -I$(INC_DIR)
 LDFLAGS  := -fuse-ld=$(LD)
 
-BUILD_BIN := $(BUILD_DIR)/rvpc_sim
+PREFIX_NAME := rvpc_sim
+BUILD_BIN   := $(BUILD_DIR)/$(PREFIX_NAME)
 
 .PHONY: all run clean
-all: $(BUILD_DIR)/rvpc_sim
+all: $(BUILD_BIN)
 
 run: $(BUILD_BIN)
 	$<
 
-$(BUILD_BIN): $(BUILD_DIR)/main.o
-	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+# $(BUILD_BIN): $(OBJECTS)
+# 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cc
-	@mkdir -p $(BUILD_DIR)
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+# $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cc
+# 	@mkdir -p $(BUILD_DIR)
+# 	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+RTL_DIR := ../src/sources_1/rtl
+RTL_SRC := $(wildcard $(RTL_DIR)/*.v)
+VFLAGS  := --no-timing -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASEINCOMPLETE -Wno-UNSIGNED -Wno-COMBDLY -Wno-MULTIDRIVEN -DD_UC_LM_IFILE='"../ucimage/ucimage.mem"' --trace-fst --trace-params --trace-structs --trace-underscore
+
+$(BUILD_BIN): $(BUILD_DIR)/$(PREFIX_NAME).mk
+	make -C $(BUILD_DIR) -f $(PREFIX_NAME).mk -j CXX=$(CXX) LINK=$(CXX)
+
+$(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC)
+	verilator --cc $(RTL_SRC) --top m_main --prefix $(PREFIX_NAME) --exe $(SOURCES) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(CXXFLAGS) $(LDFLAGS)" --Mdir $(BUILD_DIR) -I$(RTL_DIR) $(VFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)

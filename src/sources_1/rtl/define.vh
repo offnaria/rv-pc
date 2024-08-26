@@ -8,7 +8,6 @@
 `define LATENCY 5
 `define TIMEOUT 1000000
 `define HEX_DIR "../app/hex/"
-`define HEXFILE "template-asm2.hex"
 `define INST_HEX "inst-template-asm2.hex"
 
 `define CACHE_SIZE (64*1024)
@@ -195,11 +194,7 @@
 `define MEMORY_DATA_WIDTH 1 // 1 Byte
 `define I_CACHE_SIZE 4096 // 4KB
 `define D_CACHE_SIZE 4096 // 4KB
-`ifndef SYNTHESIS
-`define TLB_SIZE 4
-`else
 `define TLB_SIZE 32
-`endif
 
 // TOHOST_ADDR
 `define TOHOST_ADDR 32'h40008000

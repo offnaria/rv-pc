@@ -37,6 +37,14 @@ module m_main(
     output wire        ddr2_cs_n,
     output wire  [1:0] ddr2_dm,
     output wire        ddr2_odt,
+`else
+    output wire         dram_rd_en,
+    output wire         dram_wr_en,
+    output wire [31:0]  dram_addr,
+    output wire [31:0]  dram_wdata,
+    input  wire [127:0] dram_rdata128,
+    input  wire         dram_busy,
+    output wire [2:0]   dram_ctrl,
 `endif
     // Button
     input  wire        w_btnu,
@@ -61,13 +69,25 @@ module m_main(
     output wire        sd_sclk,
     inout  wire        sd_cmd,
     inout  wire [ 3:0] sd_dat,
+`else
+    output wire [40:0] w_sdcram_addr,
+    output wire        w_sdcram_ren,
+    output wire [ 3:0] w_sdcram_wen,
+    output wire [31:0] w_sdcram_wdata,
+    input  wire [31:0] w_sdcram_rdata,
 `endif
     // VGA
+`ifdef SYNTHESIS
     output wire [ 3:0] vga_red,
     output wire [ 3:0] vga_green,
     output wire [ 3:0] vga_blue,
     output wire        vga_h_sync,
     output wire        vga_v_sync,
+`else
+    output wire        w_vga_we,
+    output wire [31:0] w_vga_waddr,
+    output wire [31:0] w_vga_wdata,
+`endif
     // Mouse
     inout  wire        usb_ps2_clk,
     inout  wire        usb_ps2_data,
@@ -122,7 +142,6 @@ module m_main(
 
     // Clock
     wire CORE_CLK, clk_50mhz, w_locked;
-    wire RST_X2;
 
 `ifdef SYNTHESIS
     wire mig_clk, pix_clk;
@@ -135,14 +154,12 @@ module m_main(
         .clk_out3(pix_clk)    // 25MHz for framebuffer
     );
 `else
-    assign CORE_CLK = CLK;
     reg r_50mhz_gen = 1'b0;
     always @(posedge CLK) begin
         r_50mhz_gen <= ~r_50mhz_gen;
     end
     assign clk_50mhz = r_50mhz_gen;
     assign w_locked = 1'b1;
-    assign RST_X2 = 1'b1;
 `endif
 
     // Reset
@@ -242,7 +259,7 @@ module m_main(
     wire w_halt;
 
     wire [15:0] w_led_t = (w_busy << 12) | (w_mc_mode << 8)
-                        | ({interconnect.w_pl_init_done, interconnect.r_disk_done, interconnect.r_bbl_done, interconnect.r_zero_done} << 4) | interconnect.r_init_state;
+                        | ({interconn.w_pl_init_done, interconn.r_disk_done, interconn.r_bbl_done, interconn.r_zero_done} << 4) | interconn.r_init_state;
 
     // stop and count
     always@(posedge CORE_CLK) begin
@@ -255,7 +272,7 @@ module m_main(
     m_interconnect #(
         .N_HARTS(N_HARTS)
     )
-    interconnect(
+    interconn(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .RST_X          (RST_X),
@@ -373,9 +390,15 @@ module m_main(
     wire [31:0] loader_data;
     wire        loader_we;
     wire        loader_done;
+    wire [40:0] sdcram_addr;
+    wire        sdcram_ren;
+    wire [ 3:0] sdcram_wen;
+    wire [31:0] sdcram_wdata;
+    wire [31:0] sdcram_rdata;
+    wire        sdcram_busy;
     wire [31:0] sdctrl_rdata;
     wire        sdctrl_busy;
-`ifdef SYNTHESIS
+
     periph_sdcard periph_sdcard(
         .CLK         (CORE_CLK),
         .RST_X       (RST_X),
@@ -385,21 +408,61 @@ module m_main(
         .loader_done (loader_done),
         .w_dram_busy (w_dram_busy),
         .clk_50mhz   (clk_50mhz),
-        .sd_cd       (sd_cd),
-        .sd_rst      (sd_rst),
-        .sd_sclk     (sd_sclk),
-        .sd_cmd      (sd_cmd),
-        .sd_dat      (sd_dat),
+        .sdcram_addr(sdcram_addr),
+        .sdcram_ren(sdcram_ren),
+        .sdcram_wen(sdcram_wen),
+        .sdcram_wdata(sdcram_wdata),
+        .sdcram_rdata(sdcram_rdata),
+        .sdcram_busy(sdcram_busy),
         .sdctrl_rdata(sdctrl_rdata),
         .sdctrl_busy (sdctrl_busy),
-        .w_mc_addr   (interconnect.w_mc_addr),
-        .w_mc_wdata  (interconnect.w_mc_wdata),
-        .w_mode_is_mc(interconnect.w_mode_is_mc),
-        .w_mc_aces   (interconnect.w_mc_aces),
-        .w_mem_we    (interconnect.w_mem_we)
+        .w_mc_addr   (interconn.w_mc_addr),
+        .w_mc_wdata  (interconn.w_mc_wdata),
+        .w_mode_is_mc(interconn.w_mode_is_mc),
+        .w_mc_aces   (interconn.w_mc_aces),
+        .w_mem_we    (interconn.w_mem_we)
+    );
+
+`ifdef SYNTHESIS
+    wire [ 2:0] sdcram_state;
+    wire [ 2:0] sdi_state;
+    wire [ 5:0] sdc_state;
+    sdcram#(
+        .CACHE_DEPTH(2),
+        .BLOCK_NUM(8),
+        .POLLING_CYCLES(1024)
+    )sdcram_0(
+        .i_sys_clk(CLK),
+        .i_sys_rst(!RST_X),
+        .i_sd_clk(clk_50mhz),
+        .i_sd_rst(!RST_X),
+
+        // for user interface
+        .i_sdcram_addr(sdcram_addr),
+        .i_sdcram_ren(sdcram_ren),
+        .i_sdcram_wen(sdcram_wen),
+        .i_sdcram_wdata(sdcram_wdata),
+        .o_sdcram_rdata(sdcram_rdata),
+        .o_sdcram_busy(sdcram_busy),
+
+        // for debug
+        .sdcram_state(sdcram_state),
+        .sdi_state(sdi_state),
+        .sdc_state(sdc_state),
+
+        // for sd
+        .sd_cd(sd_cd),
+        .sd_rst(sd_rst),
+        .sd_sclk(sd_sclk),
+        .sd_cmd(sd_cmd),
+    	.sd_dat(sd_dat)
     );
 `else
-    // TODO: SD Card Simulation Model
+    assign w_sdcram_addr  = sdcram_addr;
+    assign w_sdcram_ren   = sdcram_ren;
+    assign w_sdcram_wen   = sdcram_wen;
+    assign w_sdcram_wdata = sdcram_wdata;
+    assign sdcram_rdata   = w_sdcram_rdata;
 `endif
 
 /*********** Chika Chika **************************/
@@ -434,11 +497,11 @@ module m_main(
     wire [31:0] w_plic_wdata;
     wire w_plic_re;
     wire [31:0] w_plic_rdata;
-    wire [N_INT_SRC-1:0] w_int_src = {interconnect.w_mouse_irq_oe,  // ID 5: mouse
-                                      interconnect.w_keybrd_irq_oe, // ID 4: keyboard
-                                      interconnect.w_ether_irq_oe,  // ID 3: ethernet
-                                      interconnect.w_disk_irq_oe,   // ID 2: disk
-                                      interconnect.w_uart_req};     // ID 1: console
+    wire [N_INT_SRC-1:0] w_int_src = {interconn.w_mouse_irq_oe,  // ID 5: mouse
+                                      interconn.w_keybrd_irq_oe, // ID 4: keyboard
+                                      interconn.w_ether_irq_oe,  // ID 3: ethernet
+                                      interconn.w_disk_irq_oe,   // ID 2: disk
+                                      interconn.w_uart_req};     // ID 1: console
     wire [N_HARTS-1:0] w_eip;
     wire [N_HARTS-1:0] w_meip = w_eip; // Fixme?
     wire [N_HARTS-1:0] w_seip = w_eip;
@@ -538,10 +601,14 @@ module m_main(
         .vga_green(vga_green)
     );
 `else
-    // TODO: Simple Framebuffer Simulation Model
+    assign w_fb_rdata = 32'h0;
+    assign w_vga_we = w_fb_we;
+    assign w_vga_waddr = {4'b0, w_offset};
+    assign w_vga_wdata = w_fb_wdata;
 `endif
 
     /***********************************      DRAM     ***********************************/
+    wire         RST_X2;
     wire         w_dram_rd_en;
     wire         w_dram_wr_en;
     wire [31:0]  w_dram_addr;
@@ -585,7 +652,15 @@ module m_main(
         .o_init_calib_complete(calib_done)
         );
 `else
-    // TODO: DRAM Simulation Model
+    assign CORE_CLK         = CLK;
+    assign RST_X2           = 1'b1;
+    assign dram_rd_en       = w_dram_rd_en;
+    assign dram_wr_en       = w_dram_wr_en;
+    assign dram_addr        = w_dram_addr;
+    assign dram_wdata       = w_dram_wdata;
+    assign w_dram_rdata128  = dram_rdata128;
+    assign w_dram_busy      = dram_busy;
+    assign dram_ctrl        = w_dram_ctrl;
 `endif
 
 endmodule

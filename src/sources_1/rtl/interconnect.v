@@ -112,11 +112,7 @@ module m_interconnect #(
     reg   [3:0] r_consf_tail        = 0;  // Note!!
     reg   [4:0] r_consf_cnts        = 0;  // Note!!
     reg         r_consf_en;
-`ifndef SYNTHESIS
-    initial #1  r_consf_en <= 1;
-`else
-    initial #1  r_consf_en <= 0;
-`endif
+    initial r_consf_en = 0;
 
     reg   [7:0] cons_fifo [0:15];
     initial begin
@@ -377,14 +373,9 @@ module m_interconnect #(
             r_mc_mode <= `MC_MODE_CPU;
             r_mc_done <= 0;
             if(r_mc_mode==`MC_MODE_KEY) begin
-`ifndef SYNTHESIS
-                r_consf_en <= 1;
-                r_consf_head <= (r_consf_head < 8) ? r_consf_head + 1 : r_consf_head;
-`else
                 r_consf_en <= (r_consf_cnts<=1) ? 0 : 1;
                 r_consf_head <= r_consf_head + 1;
                 r_consf_cnts <= r_consf_cnts - 1;
-`endif
             end
         end
 
@@ -602,9 +593,6 @@ module m_interconnect #(
     reg  r_zero_done        = 1;
     reg  [31:0]  r_zeroaddr = 0;
 
-`ifndef SYNTHESIS
-    reg  [2:0] r_init_state = 4;
-`else
     reg  [2:0] r_init_state = 0;
     always@(posedge CLK) begin
         r_init_state <= (!RST_X) ? 0 :
@@ -614,7 +602,6 @@ module m_interconnect #(
                       (r_init_state == 3 & r_dtree_done) ? 4 :
                       r_init_state;
     end
-`endif
 
     assign w_init_start = (r_initaddr != 0);
 
@@ -637,11 +624,8 @@ module m_interconnect #(
         if(r_zeroaddr >= `MEM_SIZE) r_zero_done <= 1;
     end
 
-`ifndef SYNTHESIS
-    assign w_zero_we = 0;
-`else
     assign w_zero_we = r_zero_we;
-`endif
+
     /**********************************************************************************************/
     wire [31:0]  w_dram_addr_t  = w_dram_addr & 32'h7ffffff;
     assign w_dram_addr_t2 = (r_init_state == 1) ? r_zeroaddr  :

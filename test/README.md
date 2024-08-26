@@ -4,7 +4,7 @@
 
 The simulation needs LLVM (clang++, lld,...)-18 and Verilator.
 
-You can automatically install LLVM-18 with the following commands:
+You can automatically install LLVM-18 with the following commands ([See](https://apt.llvm.org/)):
 ```
 wget https://apt.llvm.org/llvm.sh
 chmod +x llvm.sh

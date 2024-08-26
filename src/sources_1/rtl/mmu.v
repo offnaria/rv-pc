@@ -1,3 +1,5 @@
+`include "define.vh"
+
 module m_mmu (
     input wire        CLK,
     input wire  [1:0] w_tlb_req,

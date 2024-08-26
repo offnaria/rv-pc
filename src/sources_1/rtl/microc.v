@@ -13,7 +13,9 @@
 /**************************************************************************************************/
 `define D_UC_LM_BITS    13 // 8KB
 `define D_UC_LM_WIDTH   32
+`ifdef SYNTHESIS
 `define D_UC_LM_IFILE   "ucimage.mem"
+`endif
 `define D_UC_LM_SIZE    (1<<(`D_UC_LM_BITS)) // do not change
 
 /**** m_RVuc : Risc-V Micro Controller for VirtIO                                              ****/
