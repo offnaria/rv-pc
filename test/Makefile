@@ -8,7 +8,7 @@ INC_DIR   := $(SRC_DIR)
 SOURCES := $(wildcard $(SRC_DIR)/*.cc)
 OBJECTS := $(patsubst $(SRC_DIR)/%.cc,$(BUILD_DIR)/%.o,$(SOURCES))
 
-CXXFLAGS := -O2 -Wall -std=c++23 -stdlib=libc++ -I$(INC_DIR)
+CXXFLAGS := -O3 -std=c++23 -stdlib=libc++ -flto -I$(INC_DIR) $(shell pkg-config --cflags --libs gtkmm-3.0)
 LDFLAGS  := -fuse-ld=$(LD)
 
 PREFIX_NAME := rvpc_sim

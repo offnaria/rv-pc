@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <fstream>
 #include <cstdlib>
+#include <gtkmm.h>
 
 #include <verilated_fst_c.h>
 
@@ -15,10 +16,10 @@ constexpr unsigned int SDCARD_SIZE = (2 * 1024 - 128) * 1024 * 1024;
 static unsigned int cnt = 0;
 
 // DRAM simulation model
-class dram_sim {
+class DRAMSim {
     std::uint32_t ram[DRAM_SIZE/sizeof(std::uint32_t)];
 public:
-    dram_sim() {
+    DRAMSim() {
         // Make sure the DRAM is zeroed out
         std::fill(ram, ram + DRAM_SIZE/sizeof(std::uint32_t), 0);
     };
@@ -31,7 +32,7 @@ public:
             dram_rdata128.at(1) = ram[longword_idx+1];
             dram_rdata128.at(2) = ram[longword_idx+2];
             dram_rdata128.at(3) = ram[longword_idx+3];
-            // std::print("DRAM read: addr={:08x}, data={:08x} {:08x} {:08x} {:08x}\n", dram_addr, ram[longword_idx], ram[longword_idx+1], ram[longword_idx+2], ram[longword_idx+3]);
+            if ((word_idx >> 2) == (0x0093be1c >> 4)) std::print("DRAM read: addr={:08x}, data={:08x} {:08x} {:08x} {:08x}\n", dram_addr, ram[longword_idx], ram[longword_idx+1], ram[longword_idx+2], ram[longword_idx+3]);
         } else if (dram_wr_en) {
             // Write to DRAM
             if (dram_ctrl==0) {
@@ -47,16 +48,17 @@ public:
                     ram[word_idx] = dram_wdata;
                 }
             }
-            // std::print("DRAM write: addr={:08x}, data={:08x}\n", dram_addr, dram_wdata);
+            if ((word_idx >> 2) == (0x0093be1c >> 4)) std::print("DRAM write: addr={:08x}, data={:08x}\n", dram_addr, dram_wdata);
         }
+        dram_busy = dram_rd_en || dram_wr_en;
     };
 };
 
 // SD Card simulation model
-class sdcard_sim {
+class SDCardSim {
     std::uint8_t ram[SDCARD_SIZE];
 public:
-    sdcard_sim(char filename[]) {
+    SDCardSim(char filename[]) {
         // Make sure the SD Card is zeroed out
         std::fill(ram, ram + SDCARD_SIZE, 0);
         std::ifstream file(filename, std::ios::binary);
@@ -84,16 +86,61 @@ public:
     };
 };
 
+class FrameBufferSim : public Gtk::Window {
+    Gtk::Image img;
+    Glib::RefPtr<Gdk::Pixbuf> pixbuf;
+    guchar *pixels;
+    int rowstride, height, channels;
+public:
+    FrameBufferSim(int width, int height) {
+        set_title("RV-PC Frame Buffer");
+        set_default_size(width, height);
+        set_resizable(false);
+        pixbuf = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB, false, 8, width, height);
+        pixels = pixbuf->get_pixels();
+        rowstride = pixbuf->get_rowstride();
+        this->height = pixbuf->get_height();
+        channels = pixbuf->get_n_channels();
+        pixbuf->fill(0xff);
+        img.set(pixbuf);
+        img.show();
+        add(img);
+        std::print("FrameBufferSim initialized: rowstride={}, height={}, channels={}\n", rowstride, this->height, channels);
+    };
+    void framebuffer_step(VL_OUT8(&w_vga_we,0,0), VL_OUT(&w_vga_waddr,31,0), VL_OUT(&w_vga_wdata,31,0)) {
+        if (!w_vga_we) return;
+        std::print("FrameBufferSim: w_vga_we={}, w_vga_waddr={}, w_vga_wdata={}\n", w_vga_we, w_vga_waddr, w_vga_wdata);
+        const auto x = w_vga_waddr % 640;
+        const auto y = w_vga_waddr / 640;
+        if (x >= 640 || y >= 480) {
+            std::print("Invalid framebuffer address: x={}, y={}\n", x, y);
+            std::exit(1);
+        }
+        auto *p = pixels + y * rowstride + x * channels;
+        p[0] = w_vga_wdata & 0xff;
+        p[1] = (w_vga_wdata >> 8) & 0xff;
+        p[2] = (w_vga_wdata >> 16) & 0xff;
+    };
+    void showFrameBuffer() {
+        img.set(pixbuf);
+    };
+};
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::print("Usage: {} <sdcard.img>\n", argv[0]);
         return 1;
     }
     Verilated::commandArgs(argc, argv);
+    Gtk::Main kit;
     const std::unique_ptr<VerilatedContext> contextp = std::make_unique<VerilatedContext>();
     const std::unique_ptr<rvpc_sim> dut = std::make_unique<rvpc_sim>(contextp.get());
-    const std::unique_ptr<dram_sim> dram = std::make_unique<dram_sim>();
-    const std::unique_ptr<sdcard_sim> sdcard = std::make_unique<sdcard_sim>(argv[1]);
+    const std::unique_ptr<DRAMSim> dram = std::make_unique<DRAMSim>();
+    const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
+    FrameBufferSim fb(640, 480);
+    fb.show();
+
+    std::print("Simulation started\n");
 
     Verilated::traceEverOn(true);
     VerilatedFstC* tfp = new VerilatedFstC;
@@ -102,19 +149,23 @@ int main(int argc, char *argv[]) {
 
     while (!contextp->gotFinish()) {
         // std::print("Simulation step {}\n", cnt);
+        while (kit.events_pending()) kit.iteration();
         dut->CLK = ~dut->CLK;
         dram->dram_step(dut->dram_rd_en, dut->dram_wr_en, dut->dram_busy, dut->dram_ctrl, dut->dram_addr, dut->dram_wdata, dut->dram_rdata128);
         sdcard->sdcard_step(dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
-        dut->eval();
         // tfp->dump(cnt);
         if (dut->w_led & (1 << 1)) { // Let's observe it after led[1] is set, i.e. initialization is done
             tfp->dump(cnt);
+            fb.framebuffer_step(dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
+            if (cnt % 3 == 0) fb.showFrameBuffer();
             ++cnt;
         }
-        if (cnt > 100000) {
+        if (cnt == 1) std::print("Memory initialization done\n"); 
+        if (cnt >= 1000000000) {
             std::print("Simulation timed out\n");
             break;
         }
+        dut->eval();
     }
     std::print("Simulation finished. cnt={}\n", cnt);
     dut->final();
