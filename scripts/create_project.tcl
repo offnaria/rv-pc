@@ -129,7 +129,6 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/main.v" ]\
  [file normalize "${origin_dir}/src/sources_1/ip/mig_7series_0/mig_a.prj" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/mmu.v" ]\
- [file normalize "${origin_dir}/src/sources_1/rtl/top.v" ]\
  [file normalize "${origin_dir}/ucimage/ucimage.mem" ]\
 ]
 set added_files [add_files -fileset sources_1 $files]

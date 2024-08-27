@@ -11,8 +11,6 @@ module periph_sdcard (
 
     input  wire        w_dram_busy,
 
-    input  wire        clk_50mhz,
-
     output wire [40:0] sdcram_addr,
     output wire        sdcram_ren,
     output wire [ 3:0] sdcram_wen,
