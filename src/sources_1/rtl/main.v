@@ -407,7 +407,6 @@ module m_main(
         .loader_we   (loader_we),
         .loader_done (loader_done),
         .w_dram_busy (w_dram_busy),
-        .clk_50mhz   (clk_50mhz),
         .sdcram_addr(sdcram_addr),
         .sdcram_ren(sdcram_ren),
         .sdcram_wen(sdcram_wen),
@@ -432,7 +431,7 @@ module m_main(
         .BLOCK_NUM(8),
         .POLLING_CYCLES(1024)
     )sdcram_0(
-        .i_sys_clk(CLK),
+        .i_sys_clk(CORE_CLK),
         .i_sys_rst(!RST_X),
         .i_sd_clk(clk_50mhz),
         .i_sd_rst(!RST_X),
