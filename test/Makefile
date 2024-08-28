@@ -30,13 +30,15 @@ run: $(BUILD_BIN)
 
 RTL_DIR := ../src/sources_1/rtl
 RTL_SRC := $(wildcard $(RTL_DIR)/*.v)
+SIM_DIR := ../test/rtl
+SIM_SRC := $(wildcard $(SIM_DIR)/*.v)
 VFLAGS  := --no-timing -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASEINCOMPLETE -Wno-UNSIGNED -Wno-COMBDLY -Wno-MULTIDRIVEN -DD_UC_LM_IFILE='"../ucimage/ucimage.mem"' --trace-fst --trace-params --trace-structs --trace-underscore
 
 $(BUILD_BIN): $(BUILD_DIR)/$(PREFIX_NAME).mk
 	make -C $(BUILD_DIR) -f $(PREFIX_NAME).mk -j CXX=$(CXX) LINK=$(CXX)
 
-$(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC)
-	verilator --cc $(RTL_SRC) --top m_main --prefix $(PREFIX_NAME) --exe $(SOURCES) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(CXXFLAGS) $(LDFLAGS)" --Mdir $(BUILD_DIR) -I$(RTL_DIR) $(VFLAGS)
+$(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC) $(SIM_SRC)
+	verilator --cc $(RTL_SRC) $(SIM_SRC) --top m_main --prefix $(PREFIX_NAME) --exe $(SOURCES) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(CXXFLAGS) $(LDFLAGS)" --Mdir $(BUILD_DIR) -I$(RTL_DIR) $(VFLAGS)
 
 clean:
 	rm -rf $(BUILD_DIR)

@@ -37,14 +37,14 @@ module m_main(
     output wire        ddr2_cs_n,
     output wire  [1:0] ddr2_dm,
     output wire        ddr2_odt,
-`else
-    output wire         dram_rd_en,
-    output wire         dram_wr_en,
-    output wire [31:0]  dram_addr,
-    output wire [31:0]  dram_wdata,
-    input  wire [127:0] dram_rdata128,
-    input  wire         dram_busy,
-    output wire [2:0]   dram_ctrl,
+// `else
+    // output wire         dram_rd_en,
+    // output wire         dram_wr_en,
+    // output wire [31:0]  dram_addr,
+    // output wire [31:0]  dram_wdata,
+    // input  wire [127:0] dram_rdata128,
+    // input  wire         dram_busy,
+    // output wire [2:0]   dram_ctrl,
 `endif
     // Button
     input  wire        w_btnu,
@@ -384,6 +384,19 @@ module m_main(
         .w_data_we(w_data_we),
         .w_tlb_flush(w_tlb_flush)
     );
+`ifdef SYNTHESIS
+    ila_2 your_instance_name (
+        .clk(CORE_CLK), // input wire clk
+        .probe0(cluster.core0.tkn), // input wire [31:0]  probe0  
+        .probe1(cluster.core0.IdEx_pc), // input wire [31:0]  probe1 
+        .probe2(cluster.core0.IdEx_ir), // input wire [31:0]  probe2 
+        .probe3(cluster.core0.pc), // input wire [31:0]  probe3 
+        .probe4(0), // input wire [31:0]  probe4 
+        .probe5(0), // input wire [31:0]  probe5 
+        .probe6(0), // input wire [31:0]  probe6 
+        .probe7(0) // input wire [31:0]  probe7
+    );
+`endif
 
     /***********************************         SD Card       ***********************************/
     wire [31:0] loader_addr;
@@ -651,15 +664,33 @@ module m_main(
         .o_init_calib_complete(calib_done)
         );
 `else
-    assign CORE_CLK         = CLK;
-    assign RST_X2           = 1'b1;
-    assign dram_rd_en       = w_dram_rd_en;
-    assign dram_wr_en       = w_dram_wr_en;
-    assign dram_addr        = w_dram_addr;
-    assign dram_wdata       = w_dram_wdata;
-    assign w_dram_rdata128  = dram_rdata128;
-    assign w_dram_busy      = dram_busy;
-    assign dram_ctrl        = w_dram_ctrl;
+    // assign CORE_CLK         = CLK;
+    // assign RST_X2           = 1'b1;
+    // assign dram_rd_en       = w_dram_rd_en;
+    // assign dram_wr_en       = w_dram_wr_en;
+    // assign dram_addr        = w_dram_addr;
+    // assign dram_wdata       = w_dram_wdata;
+    // assign w_dram_rdata128  = dram_rdata128;
+    // assign w_dram_busy      = dram_busy;
+    // assign dram_ctrl        = w_dram_ctrl;
+    wire [3:0] w_mask = (w_dram_ctrl[1:0] == 0) ? (4'b0001 << w_dram_addr[1:0]) :
+                        (w_dram_ctrl[1:0] == 1) ? (4'b0011 << {w_dram_addr[1], 1'b0}) : 4'b1111;
+    dram_sim dram_sim0 (
+        .w_mig_clk(CLK),
+        .w_mig_rst_n(),
+        .w_CLK(CORE_CLK),
+        .w_o_rst_n(RST_X2),
+        .w_i_rd_en(w_dram_rd_en),
+        .w_i_wr_en(w_dram_wr_en),
+        .w_i_addr(w_dram_addr),
+        .w_i_data(w_dram_wdata),
+        .w_o_data3(w_dram_rdata128[127:96]),
+        .w_o_data2(w_dram_rdata128[95:64]),
+        .w_o_data1(w_dram_rdata128[63:32]),
+        .w_o_data0(w_dram_rdata128[31:0]),
+        .w_o_busy(w_dram_busy),
+        .w_i_mask(~w_mask)
+    );
 `endif
 
 endmodule
