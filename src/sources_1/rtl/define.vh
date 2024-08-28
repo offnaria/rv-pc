@@ -90,7 +90,7 @@
 `define SECTOR_SIZE         512
 `define DISK_BUF_SIZE       512*512
 `ifdef LINUX
-    `define DISK_SIZE           (2*1024*1024*1024 - 128*1024*1024)
+    `define DISK_SIZE           (1024*1024*1024 - `MEM_SIZE)
 `else
     `define DISK_SIZE           32*1024
 `endif

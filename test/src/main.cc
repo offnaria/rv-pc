@@ -127,16 +127,16 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::print("Usage: {} <sdcard.img>\n", argv[0]);
-        return 1;
-    }
+    // if (argc != 2) {
+    //     std::print("Usage: {} <sdcard.img>\n", argv[0]);
+    //     return 1;
+    // }
     Verilated::commandArgs(argc, argv);
     Gtk::Main kit;
     const std::unique_ptr<VerilatedContext> contextp = std::make_unique<VerilatedContext>();
     const std::unique_ptr<rvpc_sim> dut = std::make_unique<rvpc_sim>(contextp.get());
     // const std::unique_ptr<DRAMSim> dram = std::make_unique<DRAMSim>();
-    const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
+    // const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
     FrameBufferSim fb(640, 480);
     fb.show();
 
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
         while (kit.events_pending()) kit.iteration();
         dut->CLK = !(dut->CLK);
         // dram->dram_step(dut->dram_rd_en, dut->dram_wr_en, dut->dram_busy, dut->dram_ctrl, dut->dram_addr, dut->dram_wdata, dut->dram_rdata128);
-        sdcard->sdcard_step(dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
+        // sdcard->sdcard_step(dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
         // tfp->dump(cnt);
         if (dut->w_led & (1 << 1)) { // Let's observe it after led[1] is set, i.e. initialization is done
             tfp->dump(cnt);

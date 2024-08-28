@@ -70,11 +70,11 @@ module m_main(
     inout  wire        sd_cmd,
     inout  wire [ 3:0] sd_dat,
 `else
-    output wire [40:0] w_sdcram_addr,
-    output wire        w_sdcram_ren,
-    output wire [ 3:0] w_sdcram_wen,
-    output wire [31:0] w_sdcram_wdata,
-    input  wire [31:0] w_sdcram_rdata,
+    // output wire [40:0] w_sdcram_addr,
+    // output wire        w_sdcram_ren,
+    // output wire [ 3:0] w_sdcram_wen,
+    // output wire [31:0] w_sdcram_wdata,
+    // input  wire [31:0] w_sdcram_rdata,
 `endif
     // VGA
 `ifdef SYNTHESIS
@@ -470,11 +470,31 @@ module m_main(
     	.sd_dat(sd_dat)
     );
 `else
-    assign w_sdcram_addr  = sdcram_addr;
-    assign w_sdcram_ren   = sdcram_ren;
-    assign w_sdcram_wen   = sdcram_wen;
-    assign w_sdcram_wdata = sdcram_wdata;
-    assign sdcram_rdata   = w_sdcram_rdata;
+    // assign w_sdcram_addr  = sdcram_addr;
+    // assign w_sdcram_ren   = sdcram_ren;
+    // assign w_sdcram_wen   = sdcram_wen;
+    // assign w_sdcram_wdata = sdcram_wdata;
+    // assign sdcram_rdata   = w_sdcram_rdata;
+    sdcard_sim sdcard_sim0 (
+        .w_CLK(CORE_CLK),
+        .w_i_sys_rst(!RST_X),
+        .w_i_sd_clk(), // not used in simulation
+        .w_i_sd_rst(), // not used in simulation
+        .w_i_sdcram_addr(sdcram_addr),
+        .w_i_sdcram_ren(sdcram_ren),
+        .w_i_sdcram_wen(sdcram_wen),
+        .w_i_sdcram_wdata(sdcram_wdata),
+        .w_o_sdcram_rdata(sdcram_rdata),
+        .w_o_sdcram_busy(sdcram_busy),
+        .w_sdcram_state(), // not used in simulation
+        .w_sdi_state(), // not used in simulation
+        .w_sdc_state(), // not used in simulation
+        .w_sd_cd(), // not used in simulation
+        .w_sd_rst(), // not used in simulation
+        .w_sd_sclk(), // not used in simulation
+        .w_sd_cmd(), // not used in simulation
+        .w_sd_dat()// not used in simulation
+    );
 `endif
 
 /*********** Chika Chika **************************/
