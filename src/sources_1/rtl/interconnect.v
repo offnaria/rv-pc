@@ -189,18 +189,18 @@ module m_interconnect #(
 );
 
     /***********************************          Memory        ***********************************/
-    wire [31:0] w_insn_paddr =  (w_priv == `PRIV_M || w_satp[31] == 0) ? w_insn_addr :
-                                w_tlb_addr;
+    wire w_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);
+    wire [31:0] w_insn_paddr =  (w_is_paddr) ? w_insn_addr : w_tlb_addr;
 
-    wire [31:0] w_mem_paddr  =  (w_mode_is_mc)           ? w_mc_addr     :
-                                (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_addr   : w_tlb_addr;
+    wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr     :
+                                (w_is_paddr)   ? w_data_addr   : w_tlb_addr;
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
-                                (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_ctrl       :
-                                (w_tlb_use[1:0]!=0)                     ? w_data_ctrl       :
-                                (w_pw_state == 0)                       ? `FUNCT3_LW____    :
-                                (w_pw_state == 2)                       ? `FUNCT3_LW____    :
-                                (w_pw_state == 5)                       ? `FUNCT3_SW____    :
+                                (w_is_paddr)                          ? w_data_ctrl       :
+                                (w_tlb_use[1:0]!=0)                   ? w_data_ctrl       :
+                                (w_pw_state == 0)                     ? `FUNCT3_LW____    :
+                                (w_pw_state == 2)                     ? `FUNCT3_LW____    :
+                                (w_pw_state == 5)                     ? `FUNCT3_SW____    :
                                 w_data_ctrl;
 
     wire  [3:0] w_dev       = w_mem_paddr[31:28];
@@ -213,7 +213,7 @@ module m_interconnect #(
 
     wire [31:0] w_dram_addr =   (w_mode_is_mc)              ? w_mc_addr         :
                                 (w_iscode && !w_tlb_busy)   ? w_insn_paddr      :
-                                (w_priv == `PRIV_M || w_satp[31] == 0) ? w_data_addr :
+                                (w_is_paddr)                ? w_data_addr :
                                 (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_mem_paddr;
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :
@@ -226,7 +226,7 @@ module m_interconnect #(
                     (w_dram_busy)  ? 0 :
                     (!w_dram_aces) ? 0 :
                     (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
-                    (w_priv == `PRIV_M || w_satp[31] == 0) ? (w_iscode || w_isread) :
+                    (w_is_paddr)   ? (w_iscode || w_isread) :
                     (w_tlb_use[2:1]!=0) ? 1 :
                     (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
 
