@@ -391,17 +391,21 @@ module m_main(
         .w_tlb_flush(w_tlb_flush)
     );
 `ifdef SYNTHESIS
-    ila_2 your_instance_name (
-        .clk(CORE_CLK), // input wire clk
-        .probe0(cluster.core0.tkn), // input wire [31:0]  probe0  
-        .probe1(cluster.core0.IdEx_pc), // input wire [31:0]  probe1 
-        .probe2(cluster.core0.IdEx_ir), // input wire [31:0]  probe2 
-        .probe3(cluster.core0.pc), // input wire [31:0]  probe3 
-        .probe4(w_fb_we), // input wire [31:0]  probe4 
-        .probe5(0), // input wire [31:0]  probe5 
-        .probe6(0), // input wire [31:0]  probe6 
-        .probe7(0) // input wire [31:0]  probe7
-    );
+    generate
+        if (DEBUG) begin
+            ila_2 your_instance_name (
+                .clk(CORE_CLK), // input wire clk
+                .probe0(cluster.core0.tkn), // input wire [31:0]  probe0  
+                .probe1(cluster.core0.IdEx_pc), // input wire [31:0]  probe1 
+                .probe2(cluster.core0.IdEx_ir), // input wire [31:0]  probe2 
+                .probe3(cluster.core0.pc), // input wire [31:0]  probe3 
+                .probe4(w_fb_we), // input wire [31:0]  probe4 
+                .probe5(0), // input wire [31:0]  probe5 
+                .probe6(0), // input wire [31:0]  probe6 
+                .probe7(0) // input wire [31:0]  probe7
+            );
+        end
+    endgenerate
 `endif
 
     /***********************************         SD Card       ***********************************/
