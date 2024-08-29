@@ -159,7 +159,6 @@ module m_interconnect #(
     wire        w_tlb_hit;
     wire [31:0] w_tlb_pte_addr;
     wire        w_tlb_acs;
-    // m_mmu mmu(CLK, w_tlb_req, w_pw_state, w_r_tlb_busy, w_iscode, w_isread, w_iswrite, w_insn_addr, w_data_addr, w_priv, w_satp, w_mstatus, w_pte_we, w_pte_wdata, w_pagefault, w_tlb_addr, w_tlb_use, w_mode_is_cpu, w_use_tlb, w_tlb_hit, w_dram_odata, w_dram_busy, w_tlb_flush, w_tlb_pte_addr, w_tlb_acs);
 
     m_mmu  mmu (
         .CLK(CLK),
@@ -190,22 +189,11 @@ module m_interconnect #(
 );
 
     /***********************************          Memory        ***********************************/
-
-    //wire w_tlb_i_use = w_tlb_inst_r_oe && w_iscode;
-    //wire w_tlb_r_use = w_tlb_data_r_oe && w_isread;
-    //wire w_tlb_w_use = w_tlb_data_w_oe && w_iswrite;
-    /*wire [31:0] w_tlb_data_addr = (w_tlb_w_use) ?   {w_tlb_data_w_addr[21:2], w_data_addr[11:0]} :
-                                                    {w_tlb_data_r_addr[21:2], w_data_addr[11:0]};*/
-
-
     wire [31:0] w_insn_paddr =  (w_priv == `PRIV_M || w_satp[31] == 0) ? w_insn_addr :
                                 w_tlb_addr;
 
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc)           ? w_mc_addr     :
                                 (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_addr   : w_tlb_addr;
-//                                (w_pw_state == 5)                       ? w_tlb_addr    :
-//                                (w_tlb_acs)                             ? w_tlb_pte_addr:
-//                                                                          w_data_addr;
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
                                 (w_priv == `PRIV_M || w_satp[31] == 0)  ? w_data_ctrl       :
@@ -215,11 +203,9 @@ module m_interconnect #(
                                 (w_pw_state == 5)                       ? `FUNCT3_SW____    :
                                 w_data_ctrl;
 
-    wire  [3:0] w_dev       = w_mem_paddr[31:28];// & 32'hf0000000;
-    wire  [3:0] w_virt      = w_mem_paddr[27:24];// & 32'h0f000000;
+    wire  [3:0] w_dev       = w_mem_paddr[31:28];
+    wire  [3:0] w_virt      = w_mem_paddr[27:24];
     assign w_offset         = w_mem_paddr & 28'h7ffffff;
-
-    //always@(posedge CLK) w_virt <= w_mem_paddr & 32'h0f000000;
 
     wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
     wire        w_dram_we       = (w_mem_we && !w_tlb_busy
@@ -301,7 +287,6 @@ module m_interconnect #(
     reg  plic_ether_en = 1'b1; // Correct?
 
     /***********************************  　Keyboard     ***********************************/
-
     wire        w_keybrd_we   = (w_mode_is_mc) ? (w_mem_we && w_mem_paddr[31:12] == 20'h40010 ) :
                             (w_mem_we && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 3);
     wire [31:0] w_keybrd_data;
@@ -313,7 +298,6 @@ module m_interconnect #(
     wire [31:0] w_keybrd_qsel;
 
     /***********************************  　Mouse    ***********************************/
-
     wire        w_mouse_we   = (w_mode_is_mc) ? (w_mem_we && w_mem_paddr[31:12] == 20'h40011 ) :
                             (w_mem_we && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 4);
     wire [31:0] w_mouse_data;
@@ -356,7 +340,6 @@ module m_interconnect #(
     assign w_is_dram_data = is_dram_data;
 
     /***********************************          VirtIO        ***********************************/
-
     wire        w_uart_valid;
     wire  [7:0] w_uart_recvdata;
     wire        w_uart_req = r_consf_en && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0)
@@ -422,10 +405,7 @@ module m_interconnect #(
         if(r_tohost[31:16]==`CMD_POWER_OFF) begin
             r_mc_done <= 1;
         end
-
     end
-
-
 
     reg  [31:0] r_mc_arg = 0;
     always@(*) begin
@@ -489,26 +469,12 @@ module m_interconnect #(
     assign w_plic_wdata = w_data_wdata;
     assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
-    // Important????
-    // always@(posedge CLK) begin
-    //     if (w_dev == `PLIC_BASE_TADDR && !w_tlb_busy && w_iswrite && w_offset == 28'h2000) begin
-    //         plic_ether_en <= (w_data_wdata & (1 << `VIRTIO_ETHER_IRQ)) != 0;
-    //     end
-    // end
-
     /***********************************           BUSY         ***********************************/
-    assign w_tlb_busy = //w_use_tlb & w_pw_state != 7
+    assign w_tlb_busy =
                     !(w_use_tlb)                            ? 0 :
                     (w_pw_state == 7)                       ? 0 : 1;
-/*                    (w_pw_state != 0)                       ? 1 :
-                    ((w_iscode && w_tlb_inst_r_oe) ||
-                    (w_isread && w_tlb_data_r_oe)  ||
-                    (w_iswrite && w_tlb_data_w_oe))         ? 0 : 1;*/
 
-    /*wire w_mc_busy =    (r_mc_done)                                                 ? 0 :
-                        (r_mc_mode != 0 || w_cons_req || w_uart_req || w_disk_req)   ? 1 : 0;*/
     wire w_mc_busy =    (w_mode_is_mc) ? 1 : 0;
-
 
     wire w_tx_ready;
     assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
@@ -598,7 +564,6 @@ module m_interconnect #(
     always@(posedge CLK) begin
         r_init_state <= (!RST_X) ? 0 :
                       (r_init_state == 0)              ? 2 :
-                      //(r_init_state == 1 & r_zero_done)  ? 2 :
                       (r_init_state == 2 & r_bbl_done)   ? 3 :
                       (r_init_state == 3 & r_dtree_done) ? 4 :
                       r_init_state;
