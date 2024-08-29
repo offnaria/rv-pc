@@ -15,6 +15,7 @@ constexpr unsigned int SDCARD_SIZE = (1 * 1024 - 128) * 1024 * 1024;
 constexpr unsigned int FB_ADDR_WIDTH = 20;
 constexpr unsigned int FB_ADDR_MASK = (1 << FB_ADDR_WIDTH) - 1;
 
+constexpr unsigned int TIMEOUT = 3'000'000'000;
 constexpr bool TRACE = false;
 
 #define DRAM_SIM_CPP 0
@@ -177,7 +178,7 @@ int main(int argc, char *argv[]) {
             ++cnt;
         }
         if (cnt == 1) std::print("Memory initialization done\n"); 
-        if (cnt >= 1000000000) {
+        if (cnt >= TIMEOUT) {
             std::print("Simulation timed out\n");
             break;
         }
