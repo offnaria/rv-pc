@@ -20,12 +20,24 @@ module m_interconnect #(
     output wire [127:0]  w_data_data,
     output wire         w_is_dram_data,
     output reg          r_finish,
-    input  wire [31:0]  w_priv, w_satp, w_mstatus,
+    input  wire [31:0]  w_priv, w_satp,
     input  wire [63:0]  w_mtime,
+    // MMU
+    input  wire         w_iscode,
+    input  wire         w_isread,
+    input  wire         w_iswrite,
+    input  wire         w_pte_we,
+    input  wire [31:0]  w_pte_wdata,
+    input  wire         w_use_tlb,
+    input  wire         w_tlb_hit,
+    input  wire [2:0]   w_pw_state,
+    input  wire         w_r_tlb_busy,
+    input  wire [31:0]  w_tlb_addr,
+    input  wire  [2:0]  w_tlb_use,
+    input  wire [31:0]  w_tlb_pte_addr,
+    input  wire         w_tlb_acs,
+    // MMU end
     output wire         w_proc_busy,
-    output wire [31:0]  w_pagefault,
-    input  wire  [1:0]  w_tlb_req,
-    input  wire         w_tlb_flush,
     output wire         w_txd,
     input  wire         w_rxd,
     output wire         w_init_done,
@@ -143,50 +155,6 @@ module m_interconnect #(
 
     wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata  : w_data_wdata;
     wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
-
-    // MMU
-    wire [2:0]  w_pw_state;
-    wire        w_r_tlb_busy;
-    wire        w_iscode;
-    wire        w_isread;
-    wire        w_iswrite;
-    wire        w_pte_we;
-    wire [31:0] w_pte_wdata;
-
-    wire [31:0] w_tlb_addr;
-    wire  [2:0] w_tlb_use;
-    wire        w_use_tlb;
-    wire        w_tlb_hit;
-    wire [31:0] w_tlb_pte_addr;
-    wire        w_tlb_acs;
-
-    m_mmu  mmu (
-        .CLK(CLK),
-        .w_tlb_req(w_tlb_req),
-        .w_insn_addr(w_insn_addr),
-        .w_data_addr(w_data_addr),
-        .w_priv(w_priv),
-        .w_satp(w_satp),
-        .w_mstatus(w_mstatus),
-        .w_dram_busy(w_dram_busy),
-        .w_dram_odata(w_dram_odata),
-        .w_tlb_flush(w_tlb_flush),
-        .w_mode_is_cpu(w_mode_is_cpu),
-        .w_iscode(w_iscode),
-        .w_isread(w_isread),
-        .w_iswrite(w_iswrite),
-        .w_pte_we(w_pte_we),
-        .w_pte_wdata(w_pte_wdata),
-        .w_pagefault(w_pagefault),
-        .w_use_tlb(w_use_tlb),
-        .w_tlb_hit(w_tlb_hit),
-        .w_pw_state(w_pw_state),
-        .w_tlb_busy(w_r_tlb_busy),
-        .w_tlb_addr(w_tlb_addr),
-        .w_tlb_use(w_tlb_use),
-        .w_tlb_pte_addr(w_tlb_pte_addr),
-        .w_tlb_acs(w_tlb_acs)
-);
 
     /***********************************          Memory        ***********************************/
     wire w_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);

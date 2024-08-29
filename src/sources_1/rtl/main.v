@@ -138,11 +138,8 @@ module m_main(
     wire        w_data_we;
     wire  [2:0] w_data_ctrl;
 
-    wire [31:0] w_priv, w_satp, w_mstatus;
+    wire [31:0] w_priv, w_satp;
     wire        w_busy;
-    wire [31:0] w_pagefault;
-    wire  [1:0] w_tlb_req;
-    wire        w_tlb_flush;
     wire        w_init_done;
     wire        w_init_stage;
 
@@ -293,12 +290,23 @@ module m_main(
         .r_finish       (w_finish),
         .w_priv         (w_priv),
         .w_satp         (w_satp),
-        .w_mstatus      (w_mstatus),
         .w_mtime        (w_mtime),
+        // MMU
+        .w_iscode       (cluster.w_iscode),
+        .w_isread       (cluster.w_isread),
+        .w_iswrite      (cluster.w_iswrite),
+        .w_pte_we       (cluster.w_pte_we),
+        .w_pte_wdata    (cluster.w_pte_wdata),
+        .w_use_tlb      (cluster.w_use_tlb),
+        .w_tlb_hit      (cluster.w_tlb_hit),
+        .w_pw_state     (cluster.w_pw_state),
+        .w_r_tlb_busy   (cluster.w_tlb_busy),
+        .w_tlb_addr     (cluster.w_tlb_addr),
+        .w_tlb_use      (cluster.w_tlb_use),
+        .w_tlb_pte_addr (cluster.w_tlb_pte_addr),
+        .w_tlb_acs      (cluster.w_tlb_acs),
+        // MMU end
         .w_proc_busy    (w_busy),
-        .w_pagefault    (w_pagefault),
-        .w_tlb_req      (w_tlb_req),
-        .w_tlb_flush    (w_tlb_flush),
         .w_txd          (w_txd),
         .w_rxd          (w_rxd),
         .w_init_done    (w_init_done),
@@ -370,13 +378,15 @@ module m_main(
         .w_data_data(w_data_data),
         .w_is_dram_data(w_is_dram_data),
         .w_busy(w_busy),
-        .w_pagefault(w_pagefault),
         .w_mc_mode(w_mc_mode),
         .w_mtip(w_mtip),
         .w_msip(w_msip),
         .w_meip(w_meip),
         .w_seip(w_seip),
         .w_mtime(w_mtime),
+        .w_dram_busy(w_dram_busy),
+        .w_dram_odata(interconn.w_dram_odata),
+        .w_mode_is_cpu(interconn.w_mode_is_cpu),
         .r_halt(w_halt),
         .w_data_wdata(w_data_wdata),
         .w_insn_addr(w_insn_addr),
@@ -384,11 +394,8 @@ module m_main(
         .w_data_addr(w_data_addr),
         .w_priv(w_priv),
         .w_satp(w_satp),
-        .w_mstatus(w_mstatus),
         .w_init_stage(w_init_stage),
-        .w_tlb_req(w_tlb_req),
-        .w_data_we(w_data_we),
-        .w_tlb_flush(w_tlb_flush)
+        .w_data_we(w_data_we)
     );
 `ifdef SYNTHESIS
     generate

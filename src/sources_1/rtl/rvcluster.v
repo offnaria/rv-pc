@@ -8,13 +8,15 @@ module m_RVCluster #(
     input  wire [127:0]       w_data_data,
     input  wire               w_is_dram_data,
     input  wire               w_busy,
-    input  wire [31:0]        w_pagefault,
     input  wire [2:0]         w_mc_mode,
     input  wire [N_HARTS-1:0] w_mtip,
     input  wire [N_HARTS-1:0] w_msip,
     input  wire [N_HARTS-1:0] w_meip,
     input  wire [N_HARTS-1:0] w_seip,
     input  wire [63:0]        w_mtime,
+    input  wire               w_dram_busy,
+    input  wire [31:0]        w_dram_odata,
+    input  wire               w_mode_is_cpu,
 
     output wire               r_halt,         // register, set if the processor is halted
     output wire [31:0]        w_data_wdata,   // from r_data_wdata
@@ -23,11 +25,8 @@ module m_RVCluster #(
     output wire [31:0]        w_data_addr,    // from r_mem_addr
     output wire [31:0]        w_priv,         // from register priv
     output wire [31:0]        w_satp,         // from register satp
-    output wire [31:0]        w_mstatus,      // from register mstatus
     output wire               w_init_stage,   // from r_init_stage
-    output wire  [1:0]        w_tlb_req,      // from r_tlb_req
-    output wire               w_data_we,      // from r_data_we, write enable for DRAM memory
-    output wire               w_tlb_flush     // from r_tlb_flush
+    output wire               w_data_we       // from r_data_we, write enable for DRAM memory
 );
 
     // genvar i;
@@ -66,6 +65,51 @@ module m_RVCluster #(
         .w_tlb_req(w_tlb_req),
         .w_data_we(w_data_we),
         .w_tlb_flush(w_tlb_flush)
+    );
+
+    wire [31:0] w_pagefault;
+    wire [31:0] w_mstatus;
+    wire [1:0]  w_tlb_req;
+    wire        w_tlb_flush;
+    wire        w_iscode;
+    wire        w_isread;
+    wire        w_iswrite;
+    wire        w_pte_we;
+    wire [31:0] w_pte_wdata;
+    wire        w_use_tlb;
+    wire        w_tlb_hit;
+    wire  [2:0] w_pw_state;
+    wire        w_tlb_busy;
+    wire [31:0] w_tlb_addr;
+    wire  [2:0] w_tlb_use;
+    wire [31:0] w_tlb_pte_addr;
+    wire        w_tlb_acs;
+    m_mmu mmu0 (
+        .CLK(CLK),
+        .w_tlb_req(w_tlb_req),
+        .w_insn_addr(w_insn_addr),
+        .w_data_addr(w_data_addr),
+        .w_priv(w_priv),
+        .w_satp(w_satp),
+        .w_mstatus(w_mstatus),
+        .w_dram_busy(w_dram_busy),
+        .w_dram_odata(w_dram_odata),
+        .w_tlb_flush(w_tlb_flush),
+        .w_mode_is_cpu(w_mode_is_cpu),
+        .w_iscode(w_iscode),
+        .w_isread(w_isread),
+        .w_iswrite(w_iswrite),
+        .w_pte_we(w_pte_we),
+        .w_pte_wdata(w_pte_wdata),
+        .w_pagefault(w_pagefault),
+        .w_use_tlb(w_use_tlb),
+        .w_tlb_hit(w_tlb_hit),
+        .w_pw_state(w_pw_state),
+        .w_tlb_busy(w_tlb_busy),
+        .w_tlb_addr(w_tlb_addr),
+        .w_tlb_use(w_tlb_use),
+        .w_tlb_pte_addr(w_tlb_pte_addr),
+        .w_tlb_acs(w_tlb_acs)
     );
 
 endmodule
