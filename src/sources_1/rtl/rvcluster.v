@@ -23,8 +23,6 @@ module m_RVCluster #(
     output wire [31:0]        w_insn_addr,    // from r_insn_addr
     output wire [2:0]         w_data_ctrl,    // from r_data_ctrl
     output wire [31:0]        w_data_addr,    // from r_mem_addr
-    output wire [31:0]        w_priv,         // from register priv
-    output wire [31:0]        w_satp,         // from register satp
     output wire               w_init_stage,   // from r_init_stage
     output wire               w_data_we       // from r_data_we, write enable for DRAM memory
 );
@@ -111,5 +109,9 @@ module m_RVCluster #(
         .w_tlb_pte_addr(w_tlb_pte_addr),
         .w_tlb_acs(w_tlb_acs)
     );
+
+    wire [31:0] w_priv;
+    wire [31:0] w_satp;
+    wire w_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);
 
 endmodule

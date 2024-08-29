@@ -20,8 +20,8 @@ module m_interconnect #(
     output wire [127:0]  w_data_data,
     output wire         w_is_dram_data,
     output reg          r_finish,
-    input  wire [31:0]  w_priv, w_satp,
     input  wire [63:0]  w_mtime,
+    input  wire         w_is_paddr,
     // MMU
     input  wire         w_iscode,
     input  wire         w_isread,
@@ -157,7 +157,6 @@ module m_interconnect #(
     wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
 
     /***********************************          Memory        ***********************************/
-    wire w_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);
     wire [31:0] w_insn_paddr =  (w_is_paddr) ? w_insn_addr : w_tlb_addr;
 
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr     :

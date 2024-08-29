@@ -288,9 +288,8 @@ module m_main(
         .w_data_data    (w_data_data),
         .w_is_dram_data (w_is_dram_data),
         .r_finish       (w_finish),
-        .w_priv         (w_priv),
-        .w_satp         (w_satp),
         .w_mtime        (w_mtime),
+        .w_is_paddr     (cluster.w_is_paddr),
         // MMU
         .w_iscode       (cluster.w_iscode),
         .w_isread       (cluster.w_isread),
@@ -392,8 +391,6 @@ module m_main(
         .w_insn_addr(w_insn_addr),
         .w_data_ctrl(w_data_ctrl),
         .w_data_addr(w_data_addr),
-        .w_priv(w_priv),
-        .w_satp(w_satp),
         .w_init_stage(w_init_stage),
         .w_data_we(w_data_we)
     );
