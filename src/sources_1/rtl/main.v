@@ -6,6 +6,8 @@
 /**************************************************************************************************/
 `include "define.vh"
 
+// `define DRAM_SIM_CPP   1
+`define SDCARD_SIM_CPP 1
 /**************************************************************************************************/
 module m_main(
     input  wire        CLK,
@@ -37,14 +39,16 @@ module m_main(
     output wire        ddr2_cs_n,
     output wire  [1:0] ddr2_dm,
     output wire        ddr2_odt,
-// `else
-    // output wire         dram_rd_en,
-    // output wire         dram_wr_en,
-    // output wire [31:0]  dram_addr,
-    // output wire [31:0]  dram_wdata,
-    // input  wire [127:0] dram_rdata128,
-    // input  wire         dram_busy,
-    // output wire [2:0]   dram_ctrl,
+`else
+`ifdef DRAM_SIM_CPP
+    output wire         dram_rd_en,
+    output wire         dram_wr_en,
+    output wire [31:0]  dram_addr,
+    output wire [31:0]  dram_wdata,
+    input  wire [127:0] dram_rdata128,
+    input  wire         dram_busy,
+    output wire [2:0]   dram_ctrl,
+`endif
 `endif
     // Button
     input  wire        w_btnu,
@@ -70,11 +74,13 @@ module m_main(
     inout  wire        sd_cmd,
     inout  wire [ 3:0] sd_dat,
 `else
-    // output wire [40:0] w_sdcram_addr,
-    // output wire        w_sdcram_ren,
-    // output wire [ 3:0] w_sdcram_wen,
-    // output wire [31:0] w_sdcram_wdata,
-    // input  wire [31:0] w_sdcram_rdata,
+`ifdef SDCARD_SIM_CPP
+    output wire [40:0] w_sdcram_addr,
+    output wire        w_sdcram_ren,
+    output wire [ 3:0] w_sdcram_wen,
+    output wire [31:0] w_sdcram_wdata,
+    input  wire [31:0] w_sdcram_rdata,
+`endif
 `endif
     // VGA
 `ifdef SYNTHESIS
@@ -391,7 +397,7 @@ module m_main(
         .probe1(cluster.core0.IdEx_pc), // input wire [31:0]  probe1 
         .probe2(cluster.core0.IdEx_ir), // input wire [31:0]  probe2 
         .probe3(cluster.core0.pc), // input wire [31:0]  probe3 
-        .probe4(0), // input wire [31:0]  probe4 
+        .probe4(w_fb_we), // input wire [31:0]  probe4 
         .probe5(0), // input wire [31:0]  probe5 
         .probe6(0), // input wire [31:0]  probe6 
         .probe7(0) // input wire [31:0]  probe7
@@ -470,11 +476,13 @@ module m_main(
     	.sd_dat(sd_dat)
     );
 `else
-    // assign w_sdcram_addr  = sdcram_addr;
-    // assign w_sdcram_ren   = sdcram_ren;
-    // assign w_sdcram_wen   = sdcram_wen;
-    // assign w_sdcram_wdata = sdcram_wdata;
-    // assign sdcram_rdata   = w_sdcram_rdata;
+`ifdef SDCARD_SIM_CPP
+    assign w_sdcram_addr  = sdcram_addr;
+    assign w_sdcram_ren   = sdcram_ren;
+    assign w_sdcram_wen   = sdcram_wen;
+    assign w_sdcram_wdata = sdcram_wdata;
+    assign sdcram_rdata   = w_sdcram_rdata;
+`else
     sdcard_sim sdcard_sim0 (
         .w_CLK(CORE_CLK),
         .w_i_sys_rst(!RST_X),
@@ -495,6 +503,7 @@ module m_main(
         .w_sd_cmd(), // not used in simulation
         .w_sd_dat()// not used in simulation
     );
+`endif
 `endif
 
 /*********** Chika Chika **************************/
@@ -684,15 +693,20 @@ module m_main(
         .o_init_calib_complete(calib_done)
         );
 `else
-    // assign CORE_CLK         = CLK;
-    // assign RST_X2           = 1'b1;
-    // assign dram_rd_en       = w_dram_rd_en;
-    // assign dram_wr_en       = w_dram_wr_en;
-    // assign dram_addr        = w_dram_addr;
-    // assign dram_wdata       = w_dram_wdata;
-    // assign w_dram_rdata128  = dram_rdata128;
-    // assign w_dram_busy      = dram_busy;
-    // assign dram_ctrl        = w_dram_ctrl;
+`ifdef DRAM_SIM_CPP
+    assign CORE_CLK         = CLK;
+    assign RST_X2           = 1'b1;
+    assign dram_rd_en       = w_dram_rd_en;
+    assign dram_wr_en       = w_dram_wr_en;
+    assign dram_addr        = w_dram_addr;
+    assign dram_wdata       = (w_dram_ctrl[1:0]==2'b00) ? {4{w_dram_wdata[7:0]}} :
+                              (w_dram_ctrl[1:0]==2'b01) ? {2{w_dram_wdata[15:0]}} : w_dram_wdata;
+    assign w_dram_rdata128  = dram_rdata128;
+    assign w_dram_busy      = dram_busy;
+    assign dram_ctrl        = w_dram_ctrl;
+`else
+    wire [31:0] w_dram_wdata_t = (w_dram_ctrl[1:0]==2'b00) ? {4{w_dram_wdata[7:0]}} :
+                                 (w_dram_ctrl[1:0]==2'b01) ? {2{w_dram_wdata[15:0]}} : w_dram_wdata;
     wire [3:0] w_mask = (w_dram_ctrl[1:0] == 0) ? (4'b0001 << w_dram_addr[1:0]) :
                         (w_dram_ctrl[1:0] == 1) ? (4'b0011 << {w_dram_addr[1], 1'b0}) : 4'b1111;
     dram_sim dram_sim0 (
@@ -703,7 +717,7 @@ module m_main(
         .w_i_rd_en(w_dram_rd_en),
         .w_i_wr_en(w_dram_wr_en),
         .w_i_addr(w_dram_addr),
-        .w_i_data(w_dram_wdata),
+        .w_i_data(w_dram_wdata_t),
         .w_o_data3(w_dram_rdata128[127:96]),
         .w_o_data2(w_dram_rdata128[95:64]),
         .w_o_data1(w_dram_rdata128[63:32]),
@@ -711,6 +725,7 @@ module m_main(
         .w_o_busy(w_dram_busy),
         .w_i_mask(~w_mask)
     );
+`endif
 `endif
 
 endmodule

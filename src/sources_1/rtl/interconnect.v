@@ -525,6 +525,7 @@ module m_interconnect #(
         if(r_tohost[31:16]==`CMD_PRINT_CHAR) begin
             r_uart_we   <= 1;
             r_uart_data <= r_tohost[7:0];
+            $write("%c", r_tohost[7:0]);
         end else begin
             r_uart_we   <= 0;
             r_uart_data <= 0;

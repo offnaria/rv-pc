@@ -19,8 +19,8 @@ INITMEM_BIN := ../diskimage/initmem.bin
 all: $(BUILD_BIN)
 
 run: $(BUILD_BIN)
-#	$< $(INITMEM_BIN)
-	$<
+	$< $(INITMEM_BIN)
+#	$<
 
 # $(BUILD_BIN): $(OBJECTS)
 # 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
@@ -40,7 +40,7 @@ $(BUILD_BIN): $(BUILD_DIR)/$(PREFIX_NAME).mk
 
 $(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC) $(SIM_SRC)
 	verilator --cc $(RTL_SRC) $(SIM_SRC) --top m_main --prefix $(PREFIX_NAME) --exe $(SOURCES) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(CXXFLAGS) $(LDFLAGS)" --Mdir $(BUILD_DIR) -I$(RTL_DIR) $(VFLAGS)
-	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $(BUILD_DIR)/initmem.hex
+#	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $(BUILD_DIR)/initmem.hex
 
 clean:
 	rm -rf $(BUILD_DIR)

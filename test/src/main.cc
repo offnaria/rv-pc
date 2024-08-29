@@ -11,7 +11,13 @@
 #include "rvpc_sim.h"
 
 constexpr unsigned int DRAM_SIZE = 128 * 1024 * 1024;
-constexpr unsigned int SDCARD_SIZE = (2 * 1024 - 128) * 1024 * 1024;
+constexpr unsigned int SDCARD_SIZE = (1 * 1024 - 128) * 1024 * 1024;
+constexpr unsigned int FB_ADDR_WIDTH = 20;
+constexpr unsigned int FB_ADDR_MASK = (1 << FB_ADDR_WIDTH) - 1;
+
+constexpr bool TRACE = false;
+
+#define DRAM_SIM_CPP 0
 
 static unsigned int cnt = 0;
 
@@ -23,7 +29,8 @@ public:
         // Make sure the DRAM is zeroed out
         std::fill(ram, ram + DRAM_SIZE/sizeof(std::uint32_t), 0);
     };
-    void dram_step(VL_OUT8(&dram_rd_en,0,0), VL_OUT8(&dram_wr_en,0,0), VL_IN8(&dram_busy,0,0), VL_OUT8(&dram_ctrl,2,0), VL_OUT(&dram_addr,31,0), VL_OUT(&dram_wdata,31,0), VL_INW(&dram_rdata128,127,0,4)) {
+    void dram_step(const bool clk, VL_OUT8(&dram_rd_en,0,0), VL_OUT8(&dram_wr_en,0,0), VL_IN8(&dram_busy,0,0), VL_OUT8(&dram_ctrl,2,0), VL_OUT(&dram_addr,31,0), VL_OUT(&dram_wdata,31,0), VL_INW(&dram_rdata128,127,0,4)) {
+        if (!clk || (!dram_rd_en && !dram_wr_en)) return;
         const auto word_idx = dram_addr >> 2;
         if (dram_rd_en) {
             // Read from DRAM
@@ -32,7 +39,6 @@ public:
             dram_rdata128.at(1) = ram[longword_idx+1];
             dram_rdata128.at(2) = ram[longword_idx+2];
             dram_rdata128.at(3) = ram[longword_idx+3];
-            if ((word_idx >> 2) == (0x0093be1c >> 4)) std::print("DRAM read: addr={:08x}, data={:08x} {:08x} {:08x} {:08x}\n", dram_addr, ram[longword_idx], ram[longword_idx+1], ram[longword_idx+2], ram[longword_idx+3]);
         } else if (dram_wr_en) {
             // Write to DRAM
             if (dram_ctrl==0) {
@@ -48,7 +54,6 @@ public:
                     ram[word_idx] = dram_wdata;
                 }
             }
-            if ((word_idx >> 2) == (0x0093be1c >> 4)) std::print("DRAM write: addr={:08x}, data={:08x}\n", dram_addr, dram_wdata);
         }
         dram_busy = dram_rd_en || dram_wr_en;
     };
@@ -69,7 +74,8 @@ public:
         file.read(reinterpret_cast<char*>(ram), SDCARD_SIZE);
         file.close();
     };
-    void sdcard_step(VL_OUT8(&w_sdcram_ren,0,0), VL_OUT8(&w_sdcram_wen,3,0), VL_OUT(&w_sdcram_wdata,31,0), VL_IN(&w_sdcram_rdata,31,0), VL_OUT64(&w_sdcram_addr,40,0)) {
+    void sdcard_step(const bool clk, VL_OUT8(&w_sdcram_ren,0,0), VL_OUT8(&w_sdcram_wen,3,0), VL_OUT(&w_sdcram_wdata,31,0), VL_IN(&w_sdcram_rdata,31,0), VL_OUT64(&w_sdcram_addr,40,0)) {
+        if (!clk || (!w_sdcram_ren && !w_sdcram_wen)) return;
         const auto word_idx = w_sdcram_addr & ~0x3;
         if (w_sdcram_ren) {
             // Read from SD Card
@@ -107,11 +113,13 @@ public:
         add(img);
         std::print("FrameBufferSim initialized: rowstride={}, height={}, channels={}\n", rowstride, this->height, channels);
     };
-    void framebuffer_step(VL_OUT8(&w_vga_we,0,0), VL_OUT(&w_vga_waddr,31,0), VL_OUT(&w_vga_wdata,31,0)) {
+    void framebuffer_step(const bool clk, VL_OUT8(&w_vga_we,0,0), VL_OUT(&w_vga_waddr,31,0), VL_OUT(&w_vga_wdata,31,0)) {
+        if (!clk) return;
         if (!w_vga_we) return;
-        std::print("FrameBufferSim: w_vga_we={}, w_vga_waddr={}, w_vga_wdata={}\n", w_vga_we, w_vga_waddr, w_vga_wdata);
-        const auto x = w_vga_waddr % 640;
-        const auto y = w_vga_waddr / 640;
+        const auto addr = (w_vga_waddr & FB_ADDR_MASK) >> 2;
+        // std::print("FrameBufferSim: w_vga_we={}, w_vga_waddr={}, addr={}, w_vga_wdata={}\n", w_vga_we, w_vga_waddr, addr, w_vga_wdata);
+        const auto x = (addr << 1) % 640;
+        const auto y = (addr << 1) / 640;
         if (x >= 640 || y >= 480) {
             std::print("Invalid framebuffer address: x={}, y={}\n", x, y);
             std::exit(1);
@@ -127,37 +135,45 @@ public:
 };
 
 int main(int argc, char *argv[]) {
-    // if (argc != 2) {
-    //     std::print("Usage: {} <sdcard.img>\n", argv[0]);
-    //     return 1;
-    // }
+    if (argc != 2) {
+        std::print("Usage: {} <sdcard.img>\n", argv[0]);
+        return 1;
+    }
     Verilated::commandArgs(argc, argv);
     Gtk::Main kit;
     const std::unique_ptr<VerilatedContext> contextp = std::make_unique<VerilatedContext>();
     const std::unique_ptr<rvpc_sim> dut = std::make_unique<rvpc_sim>(contextp.get());
-    // const std::unique_ptr<DRAMSim> dram = std::make_unique<DRAMSim>();
-    // const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
+#   if DRAM_SIM_CPP
+        const std::unique_ptr<DRAMSim> dram = std::make_unique<DRAMSim>();
+#   endif
+    const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
     FrameBufferSim fb(640, 480);
     fb.show();
 
     std::print("Simulation started\n");
 
-    Verilated::traceEverOn(true);
-    VerilatedFstC* tfp = new VerilatedFstC;
-    dut->trace(tfp, 100);
-    tfp->open("rvpc_sim.fst");
+    VerilatedFstC* tfp;
+    if constexpr (TRACE) {
+        Verilated::traceEverOn(true);
+        tfp = new VerilatedFstC;
+        dut->trace(tfp, 100);
+        tfp->open("rvpc_sim.fst");
+    }
 
     while (!contextp->gotFinish()) {
         // std::print("Simulation step {}\n", cnt);
-        while (kit.events_pending()) kit.iteration();
         dut->CLK = !(dut->CLK);
-        // dram->dram_step(dut->dram_rd_en, dut->dram_wr_en, dut->dram_busy, dut->dram_ctrl, dut->dram_addr, dut->dram_wdata, dut->dram_rdata128);
-        // sdcard->sdcard_step(dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
-        // tfp->dump(cnt);
+#       if DRAM_SIM_CPP
+            dram->dram_step(dut->CLK, dut->dram_rd_en, dut->dram_wr_en, dut->dram_busy, dut->dram_ctrl, dut->dram_addr, dut->dram_wdata, dut->dram_rdata128);
+#       endif
+        sdcard->sdcard_step(dut->CLK, dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
         if (dut->w_led & (1 << 1)) { // Let's observe it after led[1] is set, i.e. initialization is done
-            tfp->dump(cnt);
-            fb.framebuffer_step(dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
-            if (cnt % 3 == 0) fb.showFrameBuffer();
+            if constexpr (TRACE) tfp->dump(cnt);
+            fb.framebuffer_step(dut->CLK, dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
+            if (cnt % 6 == 0) {
+                fb.showFrameBuffer();
+                while (kit.events_pending()) kit.iteration();
+            }
             ++cnt;
         }
         if (cnt == 1) std::print("Memory initialization done\n"); 
@@ -169,6 +185,6 @@ int main(int argc, char *argv[]) {
     }
     std::print("Simulation finished. cnt={}\n", cnt);
     dut->final();
-    tfp->close();
+    if constexpr (TRACE) tfp->close();
     return 0;
 }
