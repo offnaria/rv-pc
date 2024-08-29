@@ -131,10 +131,9 @@ module m_main(
 
     // Connection Core <--> mem_ctrl
     wire [127:0] w_insn_data;
-    wire [31:0] w_insn_addr;
     wire [127:0] w_data_data;
     wire        w_is_dram_data;
-    wire [31:0] w_data_wdata, w_data_addr;
+    wire [31:0] w_data_wdata;
     wire        w_data_we;
     wire  [2:0] w_data_ctrl;
 
@@ -279,8 +278,8 @@ module m_main(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .RST_X          (RST_X),
-        .w_insn_addr    (w_insn_addr),
-        .w_data_addr    (w_data_addr),
+        .w_cluster_iaddr(cluster.w_cluster_iaddr),
+        .w_cluster_daddr(cluster.w_cluster_daddr),
         .w_data_wdata   (w_data_wdata),
         .w_data_we      (w_data_we),
         .w_data_ctrl    (w_data_ctrl),
@@ -300,7 +299,6 @@ module m_main(
         .w_tlb_hit      (cluster.w_tlb_hit),
         .w_pw_state     (cluster.w_pw_state),
         .w_r_tlb_busy   (cluster.w_tlb_busy),
-        .w_tlb_addr     (cluster.w_tlb_addr),
         .w_tlb_use      (cluster.w_tlb_use),
         .w_tlb_pte_addr (cluster.w_tlb_pte_addr),
         .w_tlb_acs      (cluster.w_tlb_acs),
@@ -388,9 +386,7 @@ module m_main(
         .w_mode_is_cpu(interconn.w_mode_is_cpu),
         .r_halt(w_halt),
         .w_data_wdata(w_data_wdata),
-        .w_insn_addr(w_insn_addr),
         .w_data_ctrl(w_data_ctrl),
-        .w_data_addr(w_data_addr),
         .w_init_stage(w_init_stage),
         .w_data_we(w_data_we)
     );

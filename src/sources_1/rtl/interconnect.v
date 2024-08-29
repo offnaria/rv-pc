@@ -12,7 +12,7 @@ module m_interconnect #(
 )
 (
     input  wire         CLK, clk_50mhz, RST_X,
-    input  wire [31:0]  w_insn_addr, w_data_addr,
+    input  wire [31:0]  w_cluster_iaddr, w_cluster_daddr,
     input  wire [31:0]  w_data_wdata,
     input  wire         w_data_we,
     input  wire  [2:0]  w_data_ctrl,
@@ -32,7 +32,6 @@ module m_interconnect #(
     input  wire         w_tlb_hit,
     input  wire [2:0]   w_pw_state,
     input  wire         w_r_tlb_busy,
-    input  wire [31:0]  w_tlb_addr,
     input  wire  [2:0]  w_tlb_use,
     input  wire [31:0]  w_tlb_pte_addr,
     input  wire         w_tlb_acs,
@@ -157,10 +156,9 @@ module m_interconnect #(
     wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
 
     /***********************************          Memory        ***********************************/
-    wire [31:0] w_insn_paddr =  (w_is_paddr) ? w_insn_addr : w_tlb_addr;
+    wire [31:0] w_insn_paddr =  w_cluster_iaddr;
 
-    wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr     :
-                                (w_is_paddr)   ? w_data_addr   : w_tlb_addr;
+    wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
                                 (w_is_paddr)                          ? w_data_ctrl       :
@@ -180,7 +178,7 @@ module m_interconnect #(
 
     wire [31:0] w_dram_addr =   (w_mode_is_mc)              ? w_mc_addr         :
                                 (w_iscode && !w_tlb_busy)   ? w_insn_paddr      :
-                                (w_is_paddr)                ? w_data_addr :
+                                (w_is_paddr)                ? w_cluster_daddr :
                                 (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_mem_paddr;
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :

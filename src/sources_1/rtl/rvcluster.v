@@ -20,9 +20,7 @@ module m_RVCluster #(
 
     output wire               r_halt,         // register, set if the processor is halted
     output wire [31:0]        w_data_wdata,   // from r_data_wdata
-    output wire [31:0]        w_insn_addr,    // from r_insn_addr
     output wire [2:0]         w_data_ctrl,    // from r_data_ctrl
-    output wire [31:0]        w_data_addr,    // from r_mem_addr
     output wire               w_init_stage,   // from r_init_stage
     output wire               w_data_we       // from r_data_we, write enable for DRAM memory
 );
@@ -112,6 +110,9 @@ module m_RVCluster #(
 
     wire [31:0] w_priv;
     wire [31:0] w_satp;
+    wire [31:0] w_insn_addr;
+    wire [31:0] w_data_addr;
     wire w_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);
-
+    wire [31:0] w_cluster_iaddr = (w_is_paddr) ? w_insn_addr : w_tlb_addr;
+    wire [31:0] w_cluster_daddr = (w_is_paddr) ? w_data_addr : w_tlb_addr;
 endmodule
