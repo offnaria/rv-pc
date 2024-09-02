@@ -40,117 +40,135 @@ module m_RVCluster #(
     output wire               w_cluster_tlb_acs
 );
 
-    wire [31:0] w_core_iaddr;
-    wire [31:0] w_core_daddr;
-    wire [31:0] w_core_data_wdata;
-    wire [2:0]  w_core_data_ctrl;
-    wire        w_core_init_stage;
-    wire        w_core_data_we;
-    wire        w_core_is_paddr;
-    wire        w_core_iscode;
-    wire        w_core_isread;
-    wire        w_core_iswrite;
-    wire        w_core_pte_we;
-    wire [31:0] w_core_pte_wdata;
-    wire        w_core_use_tlb;
-    wire        w_core_tlb_hit;
-    wire  [2:0] w_core_pw_state;
-    wire        w_core_tlb_busy;
-    wire  [2:0] w_core_tlb_use;
-    wire [31:0] w_core_tlb_pte_addr;
-    wire        w_core_tlb_acs;
+    wire [31:0] w_core_iaddr        [0:N_HARTS-1];
+    wire [31:0] w_core_daddr        [0:N_HARTS-1];
+    wire [31:0] w_core_data_wdata   [0:N_HARTS-1];
+    wire [2:0]  w_core_data_ctrl    [0:N_HARTS-1];
+    wire        w_core_init_stage   [0:N_HARTS-1];
+    wire        w_core_data_we      [0:N_HARTS-1];
+    wire        w_core_is_paddr     [0:N_HARTS-1];
+    wire        w_core_iscode       [0:N_HARTS-1];
+    wire        w_core_isread       [0:N_HARTS-1];
+    wire        w_core_iswrite      [0:N_HARTS-1];
+    wire        w_core_pte_we       [0:N_HARTS-1];
+    wire [31:0] w_core_pte_wdata    [0:N_HARTS-1];
+    wire        w_core_use_tlb      [0:N_HARTS-1];
+    wire        w_core_tlb_hit      [0:N_HARTS-1];
+    wire  [2:0] w_core_pw_state     [0:N_HARTS-1];
+    wire        w_core_tlb_busy     [0:N_HARTS-1];
+    wire  [2:0] w_core_tlb_use      [0:N_HARTS-1];
+    wire [31:0] w_core_tlb_pte_addr [0:N_HARTS-1];
+    wire        w_core_tlb_acs      [0:N_HARTS-1];
 
-    wire [31:0] w_pagefault;
-    wire [31:0] w_mstatus;
-    wire [1:0]  w_tlb_req;
-    wire        w_tlb_flush;
-    wire [31:0] w_priv;
-    wire [31:0] w_satp;
-    wire [31:0] w_insn_addr;
-    wire [31:0] w_data_addr;
-    wire [31:0] w_tlb_addr;
+    genvar g;
+    generate
+        for (g = 0; g < N_HARTS; g = g + 1) begin: cores_and_mmus
+            wire [31:0] w_pagefault;
+            wire [31:0] w_mstatus;
+            wire [1:0]  w_tlb_req;
+            wire        w_tlb_flush;
+            wire [31:0] w_priv;
+            wire [31:0] w_satp;
+            wire [31:0] w_insn_addr;
+            wire [31:0] w_data_addr;
+            wire [31:0] w_tlb_addr;
 
-    assign w_core_is_paddr = (w_priv == `PRIV_M) || (w_satp[31] == 0);
-    assign w_core_iaddr = (w_core_is_paddr) ? w_insn_addr : w_tlb_addr;
-    assign w_core_daddr = (w_core_is_paddr) ? w_data_addr : w_tlb_addr;
+            assign w_core_is_paddr[g] = (w_priv == `PRIV_M) || (w_satp[31] == 0);
+            assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_insn_addr : w_tlb_addr;
+            assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_data_addr : w_tlb_addr;
 
-    m_RVCorePL_SMP #(
-        .MHARTID(0)
-    )
-    core0(
-        .CLK(CLK),
-        .RST_X(RST_X),
-        .w_stall(w_stall),
-        .w_insn_data(w_insn_data),
-        .w_data_data(w_data_data),
-        .w_is_dram_data(w_is_dram_data),
-        .w_busy(w_busy),
-        .w_pagefault(w_pagefault),
-        .w_mc_mode(w_mc_mode),
-        .w_mtip(w_mtip[0]),
-        .w_msip(w_msip[0]),
-        .w_meip(w_meip[0]),
-        .w_seip(w_seip[0]),
-        .w_mtime(w_mtime),
-        .r_halt(r_halt),
-        .w_data_wdata(w_core_data_wdata),
-        .w_insn_addr(w_insn_addr),
-        .w_data_ctrl(w_core_data_ctrl),
-        .w_data_addr(w_data_addr),
-        .w_priv(w_priv),
-        .w_satp(w_satp),
-        .w_mstatus(w_mstatus),
-        .w_init_stage(w_core_init_stage),
-        .w_tlb_req(w_tlb_req),
-        .w_data_we(w_core_data_we),
-        .w_tlb_flush(w_tlb_flush)
-    );
+            m_RVCorePL_SMP #(
+                .MHARTID(0)
+            ) core (
+                .CLK(CLK),
+                .RST_X(RST_X),
+                .w_stall(w_stall),
+                .w_insn_data(w_insn_data),
+                .w_data_data(w_data_data),
+                .w_is_dram_data(w_is_dram_data),
+                .w_busy(w_busy),
+                .w_pagefault(w_pagefault),
+                .w_mc_mode(w_mc_mode),
+                .w_mtip(w_mtip[0]),
+                .w_msip(w_msip[0]),
+                .w_meip(w_meip[0]),
+                .w_seip(w_seip[0]),
+                .w_mtime(w_mtime),
+                .r_halt(r_halt),
+                .w_data_wdata(w_core_data_wdata[g]),
+                .w_insn_addr(w_insn_addr),
+                .w_data_ctrl(w_core_data_ctrl[g]),
+                .w_data_addr(w_data_addr),
+                .w_priv(w_priv),
+                .w_satp(w_satp),
+                .w_mstatus(w_mstatus),
+                .w_init_stage(w_core_init_stage[g]),
+                .w_tlb_req(w_tlb_req),
+                .w_data_we(w_core_data_we[g]),
+                .w_tlb_flush(w_tlb_flush)
+            );
 
-    m_mmu mmu0 (
-        .CLK(CLK),
-        .w_tlb_req(w_tlb_req),
-        .w_insn_addr(w_insn_addr),
-        .w_data_addr(w_data_addr),
-        .w_priv(w_priv),
-        .w_satp(w_satp),
-        .w_mstatus(w_mstatus),
-        .w_dram_busy(w_dram_busy),
-        .w_dram_odata(w_dram_odata),
-        .w_tlb_flush(w_tlb_flush),
-        .w_mode_is_cpu(w_mode_is_cpu),
-        .w_iscode(w_core_iscode),
-        .w_isread(w_core_isread),
-        .w_iswrite(w_core_iswrite),
-        .w_pte_we(w_core_pte_we),
-        .w_pte_wdata(w_core_pte_wdata),
-        .w_pagefault(w_pagefault),
-        .w_use_tlb(w_core_use_tlb),
-        .w_tlb_hit(w_core_tlb_hit),
-        .w_pw_state(w_core_pw_state),
-        .w_tlb_busy(w_core_tlb_busy),
-        .w_tlb_addr(w_tlb_addr),
-        .w_tlb_use(w_core_tlb_use),
-        .w_tlb_pte_addr(w_core_tlb_pte_addr),
-        .w_tlb_acs(w_core_tlb_acs)
-    );
+            m_mmu mmu (
+                .CLK(CLK),
+                .w_tlb_req(w_tlb_req),
+                .w_insn_addr(w_insn_addr),
+                .w_data_addr(w_data_addr),
+                .w_priv(w_priv),
+                .w_satp(w_satp),
+                .w_mstatus(w_mstatus),
+                .w_dram_busy(w_dram_busy),
+                .w_dram_odata(w_dram_odata),
+                .w_tlb_flush(w_tlb_flush),
+                .w_mode_is_cpu(w_mode_is_cpu),
+                .w_iscode(w_core_iscode[g]),
+                .w_isread(w_core_isread[g]),
+                .w_iswrite(w_core_iswrite[g]),
+                .w_pte_we(w_core_pte_we[g]),
+                .w_pte_wdata(w_core_pte_wdata[g]),
+                .w_pagefault(w_pagefault),
+                .w_use_tlb(w_core_use_tlb[g]),
+                .w_tlb_hit(w_core_tlb_hit[g]),
+                .w_pw_state(w_core_pw_state[g]),
+                .w_tlb_busy(w_core_tlb_busy[g]),
+                .w_tlb_addr(w_tlb_addr),
+                .w_tlb_use(w_core_tlb_use[g]),
+                .w_tlb_pte_addr(w_core_tlb_pte_addr[g]),
+                .w_tlb_acs(w_core_tlb_acs[g])
+            );
+        end
+    endgenerate
 
-    assign w_cluster_iaddr = w_core_iaddr;
-    assign w_cluster_daddr = w_core_daddr;
-    assign w_cluster_data_wdata = w_core_data_wdata;
-    assign w_cluster_data_ctrl = w_core_data_ctrl;
-    assign w_cluster_init_stage = w_core_init_stage;
-    assign w_cluster_data_we = w_core_data_we;
-    assign w_cluster_is_paddr = w_core_is_paddr;
-    assign w_cluster_iscode = w_core_iscode;
-    assign w_cluster_isread = w_core_isread;
-    assign w_cluster_iswrite = w_core_iswrite;
-    assign w_cluster_pte_we = w_core_pte_we;
-    assign w_cluster_pte_wdata = w_core_pte_wdata;
-    assign w_cluster_use_tlb = w_core_use_tlb;
-    assign w_cluster_tlb_hit = w_core_tlb_hit;
-    assign w_cluster_pw_state = w_core_pw_state;
-    assign w_cluster_tlb_busy = w_core_tlb_busy;
-    assign w_cluster_tlb_use = w_core_tlb_use;
-    assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr;
-    assign w_cluster_tlb_acs = w_core_tlb_acs;
+    /****************************** Cluster Arbiter ******************************/
+    generate
+        begin: arbiter
+            reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
+            always @ (posedge CLK) begin
+                if (!RST_X) begin
+                    r_hart_sel <= 0;
+                end else begin
+                    r_hart_sel <= (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1; // TODO
+                end
+            end
+
+            assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
+            assign w_cluster_daddr = w_core_daddr[r_hart_sel];
+            assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
+            assign w_cluster_data_ctrl = w_core_data_ctrl[r_hart_sel];
+            assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
+            assign w_cluster_data_we = w_core_data_we[r_hart_sel];
+            assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
+            assign w_cluster_iscode = w_core_iscode[r_hart_sel];
+            assign w_cluster_isread = w_core_isread[r_hart_sel];
+            assign w_cluster_iswrite = w_core_iswrite[r_hart_sel];
+            assign w_cluster_pte_we = w_core_pte_we[r_hart_sel];
+            assign w_cluster_pte_wdata = w_core_pte_wdata[r_hart_sel];
+            assign w_cluster_use_tlb = w_core_use_tlb[r_hart_sel];
+            assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
+            assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
+            assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
+            assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
+            assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
+            assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
+        end
+    endgenerate
 endmodule
