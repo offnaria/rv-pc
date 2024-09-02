@@ -1247,10 +1247,10 @@ module m_RVCorePL_SMP#(
 
     assign w_data_addr =  ExMem_mem_addr;
 
-    assign w_tlb_req  = (!RST_X)   ? 2'h3 :
+    assign w_tlb_req  = (!RST_X)   ? `ACCESS_NONE :
                         (data_wen) ? `ACCESS_WRITE :
                         (data_ren) ? `ACCESS_READ  :
-                        (inst_ren) ? `ACCESS_CODE  : 2'h3;
+                        (inst_ren) ? `ACCESS_CODE  : `ACCESS_NONE;
 
     assign w_data_ctrl = (!RST_X) ? 0 : (ExMem_op_AMO) ? 3'h2 : ExMem_funct3;
 

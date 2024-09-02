@@ -246,6 +246,7 @@
 `define ACCESS_READ     0
 `define ACCESS_WRITE    1
 `define ACCESS_CODE     2
+`define ACCESS_NONE     3
 
 `define LEVELS      2
 `define PTE_SIZE    4
