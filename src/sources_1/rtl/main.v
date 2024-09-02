@@ -278,8 +278,8 @@ module m_main(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .RST_X          (RST_X),
-        .w_cluster_iaddr(cluster.w_cluster_iaddr),
-        .w_cluster_daddr(cluster.w_cluster_daddr),
+        .w_cluster_iaddr(w_cluster_iaddr),
+        .w_cluster_daddr(w_cluster_daddr),
         .w_data_wdata   (w_data_wdata),
         .w_data_we      (w_data_we),
         .w_data_ctrl    (w_data_ctrl),
@@ -288,20 +288,20 @@ module m_main(
         .w_is_dram_data (w_is_dram_data),
         .r_finish       (w_finish),
         .w_mtime        (w_mtime),
-        .w_is_paddr     (cluster.w_is_paddr),
+        .w_is_paddr     (w_cluster_is_paddr),
         // MMU
-        .w_iscode       (cluster.w_iscode),
-        .w_isread       (cluster.w_isread),
-        .w_iswrite      (cluster.w_iswrite),
-        .w_pte_we       (cluster.w_pte_we),
-        .w_pte_wdata    (cluster.w_pte_wdata),
-        .w_use_tlb      (cluster.w_use_tlb),
-        .w_tlb_hit      (cluster.w_tlb_hit),
-        .w_pw_state     (cluster.w_pw_state),
-        .w_r_tlb_busy   (cluster.w_tlb_busy),
-        .w_tlb_use      (cluster.w_tlb_use),
-        .w_tlb_pte_addr (cluster.w_tlb_pte_addr),
-        .w_tlb_acs      (cluster.w_tlb_acs),
+        .w_iscode       (w_cluster_iscode),
+        .w_isread       (w_cluster_isread),
+        .w_iswrite      (w_cluster_iswrite),
+        .w_pte_we       (w_cluster_pte_we),
+        .w_pte_wdata    (w_cluster_pte_wdata),
+        .w_use_tlb      (w_cluster_use_tlb),
+        .w_tlb_hit      (w_cluster_tlb_hit),
+        .w_pw_state     (w_cluster_pw_state),
+        .w_r_tlb_busy   (w_cluster_tlb_busy),
+        .w_tlb_use      (w_cluster_tlb_use),
+        .w_tlb_pte_addr (w_cluster_tlb_pte_addr),
+        .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
         .w_proc_busy    (w_busy),
         .w_txd          (w_txd),
@@ -365,6 +365,22 @@ module m_main(
         .w_offset       (w_offset)
     );
 
+    wire [31:0] w_cluster_iaddr;
+    wire [31:0] w_cluster_daddr;
+    wire        w_cluster_is_paddr;
+    wire        w_cluster_iscode;
+    wire        w_cluster_isread;
+    wire        w_cluster_iswrite;
+    wire        w_cluster_pte_we;
+    wire [31:0] w_cluster_pte_wdata;
+    wire        w_cluster_use_tlb;
+    wire        w_cluster_tlb_hit;
+    wire [2:0]  w_cluster_pw_state;
+    wire        w_cluster_tlb_busy;
+    wire [2:0]  w_cluster_tlb_use;
+    wire [31:0] w_cluster_tlb_pte_addr;
+    wire        w_cluster_tlb_acs;
+
     m_RVCluster #(
         .N_HARTS(N_HARTS)
     ) cluster(
@@ -385,10 +401,25 @@ module m_main(
         .w_dram_odata(interconn.w_dram_odata),
         .w_mode_is_cpu(interconn.w_mode_is_cpu),
         .r_halt(w_halt),
-        .w_data_wdata(w_data_wdata),
-        .w_data_ctrl(w_data_ctrl),
-        .w_init_stage(w_init_stage),
-        .w_data_we(w_data_we)
+        .w_cluster_iaddr(w_cluster_iaddr),
+        .w_cluster_daddr(w_cluster_daddr),
+        .w_cluster_data_wdata(w_data_wdata),
+        .w_cluster_data_ctrl(w_data_ctrl),
+        .w_cluster_init_stage(w_init_stage),
+        .w_cluster_data_we(w_data_we),
+        .w_cluster_is_paddr(w_cluster_is_paddr),
+        .w_cluster_iscode(w_cluster_iscode),
+        .w_cluster_isread(w_cluster_isread),
+        .w_cluster_iswrite(w_cluster_iswrite),
+        .w_cluster_pte_we(w_cluster_pte_we),
+        .w_cluster_pte_wdata(w_cluster_pte_wdata),
+        .w_cluster_use_tlb(w_cluster_use_tlb),
+        .w_cluster_tlb_hit(w_cluster_tlb_hit),
+        .w_cluster_pw_state(w_cluster_pw_state),
+        .w_cluster_tlb_busy(w_cluster_tlb_busy),
+        .w_cluster_tlb_use(w_cluster_tlb_use),
+        .w_cluster_tlb_pte_addr(w_cluster_tlb_pte_addr),
+        .w_cluster_tlb_acs(w_cluster_tlb_acs)
     );
 `ifdef SYNTHESIS
     generate
