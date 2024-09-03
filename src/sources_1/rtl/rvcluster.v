@@ -67,6 +67,8 @@ module m_RVCluster #(
     wire [N_HARTS-1:0] w_core_exmem_op_csr;
     wire [N_HARTS-1:0] w_core_tkn;
 
+    (* keep = "true" *) wire [31:0] w_core_pc [0:N_HARTS-1];
+
     genvar g;
     generate
         for (g = 0; g < N_HARTS; g = g + 1) begin: cores_and_mmus
@@ -147,6 +149,7 @@ module m_RVCluster #(
             assign w_core_mem_access_state_is_idle[g] = (core.mem_access_state == 0);
             assign w_core_exmem_op_csr[g] = core.ExMem_op_CSR;
             assign w_core_tkn[g] = core.tkn;
+            assign w_core_pc[g] = core.pc;
         end
     endgenerate
 
@@ -187,4 +190,10 @@ module m_RVCluster #(
             end
         end
     endgenerate
+
+    ila_0 your_instance_name (
+        .clk(CLK), // input wire clk
+        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+        .probe1(w_core_pc[1]) // input wire [31:0]  probe1
+    );
 endmodule
