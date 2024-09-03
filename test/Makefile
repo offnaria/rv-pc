@@ -43,6 +43,7 @@ $(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC) $(SIM_SRC) $(BUILD_DIR)/in
 #	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $(BUILD_DIR)/initmem.hex
 
 $(BUILD_DIR)/initmem.hex: $(INITMEM_BIN)
+	mkdir -p $(BUILD_DIR)
 	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $@
 
 clean:
