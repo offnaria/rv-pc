@@ -22,6 +22,7 @@
 
 			cpu0_intc: interrupt-controller {
 				#interrupt-cells = <0x1>;
+				#address-cells = <0x0>;
 				interrupt-controller;
 				compatible = "riscv,cpu-intc";
 			};
@@ -38,6 +39,7 @@
 
 			cpu1_intc: interrupt-controller {
 				#interrupt-cells = <0x1>;
+				#address-cells = <0x0>;
 				interrupt-controller;
 				compatible = "riscv,cpu-intc";
 			};
@@ -63,6 +65,7 @@
 
 		plic0: plic@50000000 {
 			#interrupt-cells = <0x1>;
+			#address-cells = <0x0>;
 			interrupt-controller;
 			compatible = "riscv,plic0";
 			riscv,ndev = <0xf>;
