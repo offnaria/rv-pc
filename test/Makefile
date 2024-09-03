@@ -38,9 +38,12 @@ VFLAGS  := --no-timing -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-CASEINCOMPLETE -Wno
 $(BUILD_BIN): $(BUILD_DIR)/$(PREFIX_NAME).mk
 	make -C $(BUILD_DIR) -f $(PREFIX_NAME).mk -j CXX=$(CXX) LINK=$(CXX)
 
-$(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC) $(SIM_SRC)
+$(BUILD_DIR)/$(PREFIX_NAME).mk: $(SOURCES) $(RTL_SRC) $(SIM_SRC) $(BUILD_DIR)/initmem.hex
 	verilator --cc $(RTL_SRC) $(SIM_SRC) --top m_main --prefix $(PREFIX_NAME) --exe $(SOURCES) -CFLAGS "$(CXXFLAGS)" -LDFLAGS "$(CXXFLAGS) $(LDFLAGS)" --Mdir $(BUILD_DIR) -I$(RTL_DIR) $(VFLAGS)
 #	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $(BUILD_DIR)/initmem.hex
+
+$(BUILD_DIR)/initmem.hex: $(INITMEM_BIN)
+	hexdump -v -e '1/4 "%08x\n"' $(INITMEM_BIN) > $@
 
 clean:
 	rm -rf $(BUILD_DIR)

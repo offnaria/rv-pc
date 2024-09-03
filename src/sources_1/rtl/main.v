@@ -7,7 +7,7 @@
 `include "define.vh"
 
 // `define DRAM_SIM_CPP   1
-`define SDCARD_SIM_CPP 1
+// `define SDCARD_SIM_CPP 1
 /**************************************************************************************************/
 module m_main(
     input  wire        CLK,

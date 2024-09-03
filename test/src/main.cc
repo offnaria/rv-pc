@@ -19,6 +19,7 @@ constexpr unsigned int TIMEOUT = 3'000'000'000;
 constexpr bool TRACE = false;
 
 #define DRAM_SIM_CPP 0
+#define SDCARD_SIM_CPP 0
 
 static unsigned int cnt = 0;
 
@@ -147,7 +148,9 @@ int main(int argc, char *argv[]) {
 #   if DRAM_SIM_CPP
         const std::unique_ptr<DRAMSim> dram = std::make_unique<DRAMSim>();
 #   endif
-    const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
+#   if SDCARD_SIM_CPP
+        const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
+#   endif
     FrameBufferSim fb(640, 480);
     fb.show();
 
@@ -167,7 +170,9 @@ int main(int argc, char *argv[]) {
 #       if DRAM_SIM_CPP
             dram->dram_step(dut->CLK, dut->dram_rd_en, dut->dram_wr_en, dut->dram_busy, dut->dram_ctrl, dut->dram_addr, dut->dram_wdata, dut->dram_rdata128);
 #       endif
-        sdcard->sdcard_step(dut->CLK, dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
+#       if SDCARD_SIM_CPP
+            sdcard->sdcard_step(dut->CLK, dut->w_sdcram_ren, dut->w_sdcram_wen, dut->w_sdcram_wdata, dut->w_sdcram_rdata, dut->w_sdcram_addr);
+#       endif
         if (dut->w_led & (1 << 1)) { // Let's observe it after led[1] is set, i.e. initialization is done
             if constexpr (TRACE) tfp->dump(cnt);
             fb.framebuffer_step(dut->CLK, dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
