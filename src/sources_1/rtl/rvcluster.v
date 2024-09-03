@@ -62,7 +62,9 @@ module m_RVCluster #(
 
     wire [N_HARTS-1:0] w_core_busy;
     wire [N_HARTS-1:0] w_core_dram_busy;
+    wire [N_HARTS-1:0] w_next_state_is_idle;
     wire [N_HARTS-1:0] w_mem_access_state_is_idle;
+    wire [N_HARTS-1:0] w_exmem_op_csr;
 
     genvar g;
     generate
@@ -82,7 +84,7 @@ module m_RVCluster #(
             assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_data_addr : w_tlb_addr;
 
             m_RVCorePL_SMP #(
-                .MHARTID(0)
+                .MHARTID(g)
             ) core (
                 .CLK(CLK),
                 .RST_X(RST_X),
@@ -140,7 +142,9 @@ module m_RVCluster #(
                 .w_tlb_acs(w_core_tlb_acs[g])
             );
 
+            assign w_next_state_is_idle[g] = (core.next_state == 0);
             assign w_mem_access_state_is_idle[g] = (core.mem_access_state == 0);
+            assign w_exmem_op_csr[g] = core.ExMem_op_CSR;
         end
     endgenerate
 
@@ -152,7 +156,7 @@ module m_RVCluster #(
                 if (!RST_X) begin
                     r_hart_sel <= 0;
                 end else begin
-                    r_hart_sel <= (w_mem_access_state_is_idle[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
+                    r_hart_sel <= (w_next_state_is_idle[r_hart_sel] && !w_exmem_op_csr[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
                 end
             end
 
@@ -176,7 +180,7 @@ module m_RVCluster #(
             assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
             assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
             for (g = 0; g < N_HARTS; g = g + 1) begin
-                assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : (~w_mem_access_state_is_idle[g]);
+                assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : 1;
                 assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
             end
         end
