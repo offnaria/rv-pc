@@ -50,7 +50,7 @@
 			#interrupt-cells = <0x1>;
 			interrupt-controller;
 			compatible = "riscv,plic0";
-			riscv,ndev = <0x1f>;
+			riscv,ndev = <0xf>;
 			reg = <0x0 0x50000000 0x0 0x8000000>;
 			interrupts-extended = <&cpu0_intc 0x9 &cpu0_intc 0xb>;
 			phandle = <0x2>;
