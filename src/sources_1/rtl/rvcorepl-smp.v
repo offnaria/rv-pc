@@ -534,7 +534,7 @@ module m_RVCorePL_SMP#(
                 jmp_pc    = 0;
                 illegal_inst = 1;
                 $write("UNKNOWN OPCODE DETECT!!\n");
-                $write("TC:%08d PC:%08x OPCODE=%7b, ir=%8x\n", mtime[31:0], IdEx_pc, IdEx_opcode, IdEx_ir);
+                $write("HARTID:%08d TC:%08d PC:%08x OPCODE=%7b, ir=%8x\n", mhartid, mtime[31:0], IdEx_pc, IdEx_opcode, IdEx_ir);
                 $write("Simulation Stopped...\n");
                 $finish();
             end
