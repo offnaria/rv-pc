@@ -55,13 +55,13 @@
 		compatible = "simple-bus";
 		ranges;
 
-		clint@60000000 {
+		clint0: clint@60000000 {
 			compatible = "riscv,clint0";
 			interrupts-extended = <&cpu0_intc 0x3 &cpu0_intc 0x7 &cpu1_intc 0x3 &cpu1_intc 0x7>;
 			reg = <0x0 0x60000000 0x0 0x8000000>;
 		};
 
-		plic@50000000 {
+		plic0: plic@50000000 {
 			#interrupt-cells = <0x1>;
 			interrupt-controller;
 			compatible = "riscv,plic0";
@@ -70,34 +70,34 @@
 			interrupts-extended = <&cpu0_intc 0x9 &cpu0_intc 0xb &cpu1_intc 0x9 &cpu1_intc 0xb>;
 		};
 
-		virtio@40000000 {
+		console0: virtio@40000000 {
 			compatible = "virtio,mmio";
 			reg = <0x0 0x40000000 0x0 0x1000>;
-			interrupts-extended = <0x2 0x1>;
+			interrupts-extended = <&plic0 0x1>;
 		};
 
-		virtio@41000000 {
+		disk0: virtio@41000000 {
 			compatible = "virtio,mmio";
 			reg = <0x0 0x41000000 0x0 0x1000>;
-			interrupts-extended = <0x2 0x2>;
+			interrupts-extended = <&plic0 0x2>;
 		};
 
-		virtio@42000000 {
+		ethernet0: virtio@42000000 {
 			compatible = "virtio,mmio";
 			reg = <0x0 0x42000000 0x0 0x1000>;
-			interrupts-extended = <0x2 0x3>;
+			interrupts-extended = <&plic0 0x3>;
 		};
 
-		virtio@43000000 {
+		keyboard0: virtio@43000000 {
 			compatible = "virtio,mmio";
 			reg = <0x0 0x43000000 0x0 0x1000>;
-			interrupts-extended = <0x2 0x4>;
+			interrupts-extended = <&plic0 0x4>;
 		};
 
-		virtio@44000000 {
+		mouse0: virtio@44000000 {
 			compatible = "virtio,mmio";
 			reg = <0x0 0x44000000 0x0 0x1000>;
-			interrupts-extended = <0x2 0x5>;
+			interrupts-extended = <&plic0 0x5>;
 		};
 
 		framebuffer@45000000{
