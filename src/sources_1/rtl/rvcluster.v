@@ -60,6 +60,10 @@ module m_RVCluster #(
     wire [31:0] w_core_tlb_pte_addr [0:N_HARTS-1];
     wire        w_core_tlb_acs      [0:N_HARTS-1];
 
+    wire [N_HARTS-1:0] w_core_busy;
+    wire [N_HARTS-1:0] w_core_dram_busy;
+    wire [N_HARTS-1:0] w_mem_access_state_is_idle;
+
     genvar g;
     generate
         for (g = 0; g < N_HARTS; g = g + 1) begin: cores_and_mmus
@@ -86,7 +90,7 @@ module m_RVCluster #(
                 .w_insn_data(w_insn_data),
                 .w_data_data(w_data_data),
                 .w_is_dram_data(w_is_dram_data),
-                .w_busy(w_busy),
+                .w_busy(w_core_busy[g]),
                 .w_pagefault(w_pagefault),
                 .w_mc_mode(w_mc_mode),
                 .w_mtip(w_mtip[0]),
@@ -116,7 +120,7 @@ module m_RVCluster #(
                 .w_priv(w_priv),
                 .w_satp(w_satp),
                 .w_mstatus(w_mstatus),
-                .w_dram_busy(w_dram_busy),
+                .w_dram_busy(w_core_dram_busy[g]),
                 .w_dram_odata(w_dram_odata),
                 .w_tlb_flush(w_tlb_flush),
                 .w_mode_is_cpu(w_mode_is_cpu),
@@ -135,6 +139,8 @@ module m_RVCluster #(
                 .w_tlb_pte_addr(w_core_tlb_pte_addr[g]),
                 .w_tlb_acs(w_core_tlb_acs[g])
             );
+
+            assign w_mem_access_state_is_idle[g] = (core.mem_access_state == 0);
         end
     endgenerate
 
@@ -146,7 +152,7 @@ module m_RVCluster #(
                 if (!RST_X) begin
                     r_hart_sel <= 0;
                 end else begin
-                    r_hart_sel <= (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1; // TODO
+                    r_hart_sel <= (w_mem_access_state_is_idle[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
                 end
             end
 
@@ -169,6 +175,10 @@ module m_RVCluster #(
             assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
             assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
             assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
+            for (g = 0; g < N_HARTS; g = g + 1) begin
+                assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : (~w_mem_access_state_is_idle[g]);
+                assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
+            end
         end
     endgenerate
 endmodule
