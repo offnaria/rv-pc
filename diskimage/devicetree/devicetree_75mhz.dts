@@ -16,7 +16,7 @@
 			reg = <0x0>;
 			status = "okay";
 			compatible = "riscv";
-			riscv,isa = "rv32acim";
+			riscv,isa = "rv32ima";
 			mmu-type = "riscv,sv32";
 			clock-frequency = <0x47868c0>;
 
@@ -24,7 +24,22 @@
 				#interrupt-cells = <0x1>;
 				interrupt-controller;
 				compatible = "riscv,cpu-intc";
-				phandle = <0x1>;
+			};
+		};
+
+		cpu1: cpu@1 {
+			device_type = "cpu";
+			reg = <0x1>;
+			status = "okay";
+			compatible = "riscv";
+			riscv,isa = "rv32ima";
+			mmu-type = "riscv,sv32";
+			clock-frequency = <0x47868c0>;
+
+			cpu1_intc: interrupt-controller {
+				#interrupt-cells = <0x1>;
+				interrupt-controller;
+				compatible = "riscv,cpu-intc";
 			};
 		};
 	};
@@ -42,7 +57,7 @@
 
 		clint@60000000 {
 			compatible = "riscv,clint0";
-			interrupts-extended = <&cpu0_intc 0x3 &cpu0_intc 0x7>;
+			interrupts-extended = <&cpu0_intc 0x3 &cpu0_intc 0x7 &cpu1_intc 0x3 &cpu1_intc 0x7>;
 			reg = <0x0 0x60000000 0x0 0x8000000>;
 		};
 
@@ -52,8 +67,7 @@
 			compatible = "riscv,plic0";
 			riscv,ndev = <0xf>;
 			reg = <0x0 0x50000000 0x0 0x8000000>;
-			interrupts-extended = <&cpu0_intc 0x9 &cpu0_intc 0xb>;
-			phandle = <0x2>;
+			interrupts-extended = <&cpu0_intc 0x9 &cpu0_intc 0xb &cpu1_intc 0x9 &cpu1_intc 0xb>;
 		};
 
 		virtio@40000000 {
