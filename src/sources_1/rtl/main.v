@@ -108,6 +108,7 @@ module m_main(
 
     /*******************************************************************************/
     localparam DEBUG = 0;
+    localparam DEBUG_CLINT = 0;
     localparam N_HARTS = 2;
     localparam N_INT_SRC = 5;
     /*******************************************************************************/
@@ -644,8 +645,9 @@ module m_main(
     );
 
     generate
-        if (DEBUG) begin
-            ila_0 ila0 (
+        if (DEBUG_CLINT) begin
+`ifdef SYNTHESIS
+            ila_clint ila_clint (
                 .clk(CORE_CLK),             // input wire clk
                 .probe0(w_offset),          // input wire [27:0]  probe0  
                 .probe1(w_clint_we),        // input wire [0:0]  probe1 
@@ -653,9 +655,9 @@ module m_main(
                 .probe3(w_clint_rdata),     // input wire [31:0]  probe3 
                 .probe4(w_mtip),            // input wire [0:0]  probe4 
                 .probe5(w_msip),            // input wire [0:0]  probe5 
-                .probe6(w_mtime),           // input wire [63:0]  probe6
-                .probe7(cluster.core0.mip)  // input wire [31:0]  probe7
+                .probe6(w_mtime)           // input wire [63:0]  probe6
             );
+`endif
         end
     endgenerate
     
