@@ -65,10 +65,9 @@ module m_RVCluster #(
     wire [1:0]  w_core_tlb_req      [0:N_HARTS-1];
     wire [31:0] w_core_priv         [0:N_HARTS-1];
     wire [31:0] w_core_satp         [0:N_HARTS-1];
-    wire [31:0] w_core_tlb_addr     [0:N_HARTS-1];
+    wire [31:0] w_core_tlb_addr;
 
     wire [N_HARTS-1:0] w_core_busy;
-    wire [N_HARTS-1:0] w_core_dram_busy;
     wire [N_HARTS-1:0] w_core_next_state_is_idle;
     wire [N_HARTS-1:0] w_core_mem_access_state_is_idle;
     wire [N_HARTS-1:0] w_core_exmem_op_csr;
@@ -87,8 +86,8 @@ module m_RVCluster #(
     generate
         for (g = 0; g < N_HARTS; g = g + 1) begin: cores_and_mmus
             assign w_core_is_paddr[g] = (w_core_priv[g] == `PRIV_M) || (w_core_satp[g][31] == 0);
-            assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_core_local_iaddr[g] : w_core_tlb_addr[g];
-            assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_core_local_daddr[g] : w_core_tlb_addr[g];
+            assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_core_local_iaddr[g] : w_core_tlb_addr;
+            assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_core_local_daddr[g] : w_core_tlb_addr;
 
             m_RVCorePL_SMP #(
                 .MHARTID(g)
@@ -129,6 +128,7 @@ module m_RVCluster #(
         end
     endgenerate
 
+    wire [31:0] w_mmu_pagefault;
     m_mmu mmu (
         .CLK(CLK),
         .w_tlb_req(w_core_tlb_req[r_hart_sel]),
@@ -137,24 +137,24 @@ module m_RVCluster #(
         .w_priv(w_core_priv[r_hart_sel]),
         .w_satp(w_core_satp[r_hart_sel]),
         .w_mstatus(w_core_mstatus[r_hart_sel]),
-        .w_dram_busy(w_core_dram_busy[r_hart_sel]),
+        .w_dram_busy(w_dram_busy),
         .w_dram_odata(w_dram_odata),
         .w_tlb_flush(w_flush_all_tlbs),
         .w_mode_is_cpu(w_mode_is_cpu),
-        .w_iscode(w_core_iscode[r_hart_sel]),
-        .w_isread(w_core_isread[r_hart_sel]),
-        .w_iswrite(w_core_iswrite[r_hart_sel]),
-        .w_pte_we(w_core_pte_we[r_hart_sel]),
-        .w_pte_wdata(w_core_pte_wdata[r_hart_sel]),
-        .w_pagefault(w_core_pagefault[r_hart_sel]),
-        .w_use_tlb(w_core_use_tlb[r_hart_sel]),
-        .w_tlb_hit(w_core_tlb_hit[r_hart_sel]),
-        .w_pw_state(w_core_pw_state[r_hart_sel]),
-        .w_tlb_busy(w_core_tlb_busy[r_hart_sel]),
-        .w_tlb_addr(w_core_tlb_addr[r_hart_sel]),
-        .w_tlb_use(w_core_tlb_use[r_hart_sel]),
-        .w_tlb_pte_addr(w_core_tlb_pte_addr[r_hart_sel]),
-        .w_tlb_acs(w_core_tlb_acs[r_hart_sel])
+        .w_iscode(w_cluster_iscode),
+        .w_isread(w_cluster_isread),
+        .w_iswrite(w_cluster_iswrite),
+        .w_pte_we(w_cluster_pte_we),
+        .w_pte_wdata(w_cluster_pte_wdata),
+        .w_pagefault(w_mmu_pagefault),
+        .w_use_tlb(w_cluster_use_tlb),
+        .w_tlb_hit(w_cluster_tlb_hit),
+        .w_pw_state(w_cluster_pw_state),
+        .w_tlb_busy(w_cluster_tlb_busy),
+        .w_tlb_addr(w_core_tlb_addr),
+        .w_tlb_use(w_cluster_tlb_use),
+        .w_tlb_pte_addr(w_cluster_tlb_pte_addr),
+        .w_tlb_acs(w_cluster_tlb_acs)
     );
 
     /****************************** Cluster Arbiter ******************************/
@@ -163,7 +163,7 @@ module m_RVCluster #(
         if (!RST_X) begin
             r_hart_sel <= 0;
         end else begin
-            r_hart_sel <= (!w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
+            r_hart_sel <= (!w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel] && (w_mmu_pagefault == ~0)) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
         end
     end
 
@@ -174,21 +174,21 @@ module m_RVCluster #(
     assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
     assign w_cluster_data_we = w_core_data_we[r_hart_sel];
     assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
-    assign w_cluster_iscode = w_core_iscode[r_hart_sel];
-    assign w_cluster_isread = w_core_isread[r_hart_sel];
-    assign w_cluster_iswrite = w_core_iswrite[r_hart_sel];
-    assign w_cluster_pte_we = w_core_pte_we[r_hart_sel];
-    assign w_cluster_pte_wdata = w_core_pte_wdata[r_hart_sel];
-    assign w_cluster_use_tlb = w_core_use_tlb[r_hart_sel];
-    assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
-    assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
-    assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
-    assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
-    assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
-    assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
+    // assign w_cluster_iscode = w_core_iscode[r_hart_sel];
+    // assign w_cluster_isread = w_core_isread[r_hart_sel];
+    // assign w_cluster_iswrite = w_core_iswrite[r_hart_sel];
+    // assign w_cluster_pte_we = w_core_pte_we[r_hart_sel];
+    // assign w_cluster_pte_wdata = w_core_pte_wdata[r_hart_sel];
+    // assign w_cluster_use_tlb = w_core_use_tlb[r_hart_sel];
+    // assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
+    // assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
+    // assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
+    // assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
+    // assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
+    // assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
     for (g = 0; g < N_HARTS; g = g + 1) begin
         assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : 1;
-        assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
+        assign w_core_pagefault[g] = (r_hart_sel == g) ? w_mmu_pagefault : ~0;
     end
 
 // `ifdef SYNTHESIS
