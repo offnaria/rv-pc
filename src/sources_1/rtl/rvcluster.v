@@ -67,6 +67,12 @@ module m_RVCluster #(
     wire [N_HARTS-1:0] w_core_exmem_op_csr;
     wire [N_HARTS-1:0] w_core_tkn;
     wire [N_HARTS-1:0] w_core_take_exception;
+    wire [N_HARTS-1:0] w_core_tlb_flush;
+
+    wire [31:0] w_core_local_iaddr  [0:N_HARTS-1];
+    wire [31:0] w_core_local_daddr  [0:N_HARTS-1];
+
+    wire w_flush_all_tlbs = |w_core_tlb_flush;
 
     (* keep = "true" *) wire [31:0] w_core_pc [0:N_HARTS-1];
 
@@ -76,16 +82,13 @@ module m_RVCluster #(
             wire [31:0] w_pagefault;
             wire [31:0] w_mstatus;
             wire [1:0]  w_tlb_req;
-            wire        w_tlb_flush;
             wire [31:0] w_priv;
             wire [31:0] w_satp;
-            wire [31:0] w_insn_addr;
-            wire [31:0] w_data_addr;
             wire [31:0] w_tlb_addr;
 
             assign w_core_is_paddr[g] = (w_priv == `PRIV_M) || (w_satp[31] == 0);
-            assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_insn_addr : w_tlb_addr;
-            assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_data_addr : w_tlb_addr;
+            assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_core_local_iaddr[g] : w_tlb_addr;
+            assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_core_local_daddr[g] : w_tlb_addr;
 
             m_RVCorePL_SMP #(
                 .MHARTID(g)
@@ -105,29 +108,29 @@ module m_RVCluster #(
                 .w_mtime(w_mtime),
                 .r_halt(r_halt),
                 .w_data_wdata(w_core_data_wdata[g]),
-                .w_insn_addr(w_insn_addr),
+                .w_insn_addr(w_core_local_iaddr[g]),
                 .w_data_ctrl(w_core_data_ctrl[g]),
-                .w_data_addr(w_data_addr),
+                .w_data_addr(w_core_local_daddr[g]),
                 .w_priv(w_priv),
                 .w_satp(w_satp),
                 .w_mstatus(w_mstatus),
                 .w_init_stage(w_core_init_stage[g]),
                 .w_tlb_req(w_tlb_req),
                 .w_data_we(w_core_data_we[g]),
-                .w_tlb_flush(w_tlb_flush)
+                .w_tlb_flush(w_core_tlb_flush[g])
             );
 
             m_mmu mmu (
                 .CLK(CLK),
                 .w_tlb_req(w_tlb_req),
-                .w_insn_addr(w_insn_addr),
-                .w_data_addr(w_data_addr),
+                .w_insn_addr(w_core_local_iaddr[r_hart_sel]),
+                .w_data_addr(w_core_local_daddr[r_hart_sel]),
                 .w_priv(w_priv),
                 .w_satp(w_satp),
                 .w_mstatus(w_mstatus),
                 .w_dram_busy(w_core_dram_busy[g]),
                 .w_dram_odata(w_dram_odata),
-                .w_tlb_flush(w_tlb_flush),
+                .w_tlb_flush(w_flush_all_tlbs),
                 .w_mode_is_cpu(w_mode_is_cpu),
                 .w_iscode(w_core_iscode[g]),
                 .w_isread(w_core_isread[g]),
@@ -188,16 +191,16 @@ module m_RVCluster #(
         assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
     end
 
-`ifdef SYNTHESIS
-    ila_0 your_instance_name (
-        .clk(CLK), // input wire clk
-        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
-        .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
-        .probe2(cores_and_mmus[0].w_pagefault), // input wire [31:0]  probe2 
-        .probe3(cores_and_mmus[1].w_pagefault), // input wire [31:0]  probe3 
-        .probe4(r_hart_sel), // input wire [3:0]  probe4 
-        .probe5(cores_and_mmus[0].core.w_take_exception), // input wire [0:0]  probe5 
-        .probe6(cores_and_mmus[1].core.w_take_exception) // input wire [0:0]  probe6
-    );
-`endif
+// `ifdef SYNTHESIS
+//     ila_0 your_instance_name (
+//         .clk(CLK), // input wire clk
+//         .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+//         .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
+//         .probe2(cores_and_mmus[0].w_pagefault), // input wire [31:0]  probe2 
+//         .probe3(cores_and_mmus[1].w_pagefault), // input wire [31:0]  probe3 
+//         .probe4(r_hart_sel), // input wire [3:0]  probe4 
+//         .probe5(cores_and_mmus[0].core.w_take_exception), // input wire [0:0]  probe5 
+//         .probe6(cores_and_mmus[1].core.w_take_exception) // input wire [0:0]  probe6
+//     );
+// `endif
 endmodule
