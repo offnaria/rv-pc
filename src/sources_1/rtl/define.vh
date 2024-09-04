@@ -194,7 +194,7 @@
 `define MEMORY_DATA_WIDTH 1 // 1 Byte
 `define I_CACHE_SIZE 4096 // 4KB
 `define D_CACHE_SIZE 4096 // 4KB
-`define TLB_SIZE 32
+`define TLB_SIZE 64
 
 // TOHOST_ADDR
 `define TOHOST_ADDR 32'h40008000
