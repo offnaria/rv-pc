@@ -74,6 +74,7 @@ module m_RVCluster #(
     wire [N_HARTS-1:0] w_core_tkn;
     wire [N_HARTS-1:0] w_core_take_exception;
     wire [N_HARTS-1:0] w_core_tlb_flush;
+    wire [N_HARTS-1:0] w_core_csr_flush;
 
     wire [31:0] w_core_local_iaddr  [0:N_HARTS-1];
     wire [31:0] w_core_local_daddr  [0:N_HARTS-1];
@@ -125,6 +126,7 @@ module m_RVCluster #(
             assign w_core_tkn[g] = core.tkn;
             assign w_core_pc[g] = core.pc;
             assign w_core_take_exception[g] = core.w_take_exception;
+            assign w_core_csr_flush[g] = core.w_csr_flush;
         end
     endgenerate
 
@@ -159,7 +161,7 @@ module m_RVCluster #(
 
     /****************************** Cluster Arbiter ******************************/
     reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
-    wire w_hart_sel_changable = !w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel] && (w_mmu_pagefault == ~0);
+    wire w_hart_sel_changable = !w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel] && (w_mmu_pagefault == ~0) && !w_core_csr_flush[r_hart_sel];
     always @ (posedge CLK) begin
         if (!RST_X) begin
             r_hart_sel <= 0;
