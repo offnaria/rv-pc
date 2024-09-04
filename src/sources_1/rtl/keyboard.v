@@ -138,7 +138,7 @@ module m_keyboard(CLK, RST_X, w_we, w_addr_t, w_idata, w_iirq, w_odata,
 
     reg key_release = 0;
 
-    assign w_key_recv = r_en && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0)
+    assign w_key_recv = r_en && ((w_mtime & 64'h3ffff) == 0)
                             && (w_mode == `MC_MODE_CPU) && w_init_stage;
 
 `ifdef CH559_USB

@@ -85,7 +85,7 @@ module m_ether(CLK, clk_50mhz, RST_X, w_we, w_addr_t, w_idata, w_iirq, w_odata,
     assign w_oirq = r_oirq;
 
     assign w_send_req  = (w_mode==`MC_MODE_CPU && w_we && w_addr == 32'h50 && w_idata == 1);
-    assign w_recv_req  = (w_mode==`MC_MODE_CPU && pending && w_init_stage && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0) && int_en);
+    assign w_recv_req  = (w_mode==`MC_MODE_CPU && pending && w_init_stage && ((w_mtime & 64'h3ffff) == 0) && int_en);
     assign w_qnum = QueueNum;
     assign w_qsel = (w_recv_req) ? 0 : w_idata ;
 

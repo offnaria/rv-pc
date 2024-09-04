@@ -307,7 +307,7 @@ module m_interconnect #(
     /***********************************          VirtIO        ***********************************/
     wire        w_uart_valid;
     wire  [7:0] w_uart_recvdata;
-    wire        w_uart_req = r_consf_en && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0)
+    wire        w_uart_req = r_consf_en && ((w_mtime & 64'h3ffff) == 0)
                             && w_mode_is_cpu && w_init_stage;
 
     wire w_virtio_req = w_cons_req || w_uart_req || w_disk_req || w_ether_send_req || w_ether_recv_req || w_keybrd_req || w_mouse_req;

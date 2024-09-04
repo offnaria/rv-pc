@@ -119,7 +119,7 @@ module m_mouse(CLK, RST_X, w_we, w_addr_t, w_idata, w_iirq, w_odata,
     reg   [66:0] fifo [0:15];
 
 
-    assign w_mouse_recv = r_en && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0)
+    assign w_mouse_recv = r_en && ((w_mtime & 64'h3ffff) == 0)
                             && (w_mode == `MC_MODE_CPU) && w_init_stage;
 
 
