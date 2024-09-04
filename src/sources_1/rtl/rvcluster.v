@@ -120,34 +120,6 @@ module m_RVCluster #(
                 .w_tlb_flush(w_core_tlb_flush[g])
             );
 
-            m_mmu mmu (
-                .CLK(CLK),
-                .w_tlb_req(w_core_tlb_req[g]),
-                .w_insn_addr(w_core_local_iaddr[r_hart_sel]),
-                .w_data_addr(w_core_local_daddr[r_hart_sel]),
-                .w_priv(w_core_priv[g]),
-                .w_satp(w_core_satp[g]),
-                .w_mstatus(w_core_mstatus[g]),
-                .w_dram_busy(w_core_dram_busy[g]),
-                .w_dram_odata(w_dram_odata),
-                .w_tlb_flush(w_flush_all_tlbs),
-                .w_mode_is_cpu(w_mode_is_cpu),
-                .w_iscode(w_core_iscode[g]),
-                .w_isread(w_core_isread[g]),
-                .w_iswrite(w_core_iswrite[g]),
-                .w_pte_we(w_core_pte_we[g]),
-                .w_pte_wdata(w_core_pte_wdata[g]),
-                .w_pagefault(w_core_pagefault[g]),
-                .w_use_tlb(w_core_use_tlb[g]),
-                .w_tlb_hit(w_core_tlb_hit[g]),
-                .w_pw_state(w_core_pw_state[g]),
-                .w_tlb_busy(w_core_tlb_busy[g]),
-                .w_tlb_addr(w_core_tlb_addr[g]),
-                .w_tlb_use(w_core_tlb_use[g]),
-                .w_tlb_pte_addr(w_core_tlb_pte_addr[g]),
-                .w_tlb_acs(w_core_tlb_acs[g])
-            );
-
             assign w_core_next_state_is_idle[g] = (core.next_state == 0);
             assign w_core_mem_access_state_is_idle[g] = (core.mem_access_state == 0);
             assign w_core_exmem_op_csr[g] = core.ExMem_op_CSR;
@@ -156,6 +128,34 @@ module m_RVCluster #(
             assign w_core_take_exception[g] = core.w_take_exception;
         end
     endgenerate
+
+    m_mmu mmu (
+        .CLK(CLK),
+        .w_tlb_req(w_core_tlb_req[r_hart_sel]),
+        .w_insn_addr(w_core_local_iaddr[r_hart_sel]),
+        .w_data_addr(w_core_local_daddr[r_hart_sel]),
+        .w_priv(w_core_priv[r_hart_sel]),
+        .w_satp(w_core_satp[r_hart_sel]),
+        .w_mstatus(w_core_mstatus[r_hart_sel]),
+        .w_dram_busy(w_core_dram_busy[r_hart_sel]),
+        .w_dram_odata(w_dram_odata),
+        .w_tlb_flush(w_flush_all_tlbs),
+        .w_mode_is_cpu(w_mode_is_cpu),
+        .w_iscode(w_core_iscode[r_hart_sel]),
+        .w_isread(w_core_isread[r_hart_sel]),
+        .w_iswrite(w_core_iswrite[r_hart_sel]),
+        .w_pte_we(w_core_pte_we[r_hart_sel]),
+        .w_pte_wdata(w_core_pte_wdata[r_hart_sel]),
+        .w_pagefault(w_core_pagefault[r_hart_sel]),
+        .w_use_tlb(w_core_use_tlb[r_hart_sel]),
+        .w_tlb_hit(w_core_tlb_hit[r_hart_sel]),
+        .w_pw_state(w_core_pw_state[r_hart_sel]),
+        .w_tlb_busy(w_core_tlb_busy[r_hart_sel]),
+        .w_tlb_addr(w_core_tlb_addr[r_hart_sel]),
+        .w_tlb_use(w_core_tlb_use[r_hart_sel]),
+        .w_tlb_pte_addr(w_core_tlb_pte_addr[r_hart_sel]),
+        .w_tlb_acs(w_core_tlb_acs[r_hart_sel])
+    );
 
     /****************************** Cluster Arbiter ******************************/
     reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
