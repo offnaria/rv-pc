@@ -17,6 +17,7 @@ module m_RVCluster #(
     input  wire               w_dram_busy,
     input  wire [31:0]        w_dram_odata,
     input  wire               w_mode_is_cpu,
+    input  wire               w_next_mode_is_mc,
 
     output wire               r_halt,
     output wire [31:0]        w_cluster_iaddr,
@@ -161,7 +162,7 @@ module m_RVCluster #(
                 if (!RST_X) begin
                     r_hart_sel <= 0;
                 end else begin
-                    r_hart_sel <= (w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
+                    r_hart_sel <= (!w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
                 end
             end
 
@@ -191,9 +192,9 @@ module m_RVCluster #(
         end
     endgenerate
 
-    ila_0 your_instance_name (
-        .clk(CLK), // input wire clk
-        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
-        .probe1(w_core_pc[1]) // input wire [31:0]  probe1
-    );
+    // ila_0 your_instance_name (
+    //     .clk(CLK), // input wire clk
+    //     .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+    //     .probe1(w_core_pc[1]) // input wire [31:0]  probe1
+    // );
 endmodule

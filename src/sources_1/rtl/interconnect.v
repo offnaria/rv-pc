@@ -309,6 +309,8 @@ module m_interconnect #(
     wire  [7:0] w_uart_recvdata;
     wire        w_uart_req = r_consf_en && (w_mtime > 64'd61000000) && ((w_mtime & 64'h3ffff) == 0)
                             && w_mode_is_cpu && w_init_stage;
+
+    wire w_virtio_req = w_cons_req || w_uart_req || w_disk_req || w_ether_send_req || w_ether_recv_req || w_keybrd_req || w_mouse_req;
     reg         r_uart_valid = 0;
     reg   [7:0] r_uart_recvdata  = 0;
     always@(posedge CLK) begin
@@ -317,16 +319,6 @@ module m_interconnect #(
     end
 
     always@(posedge CLK) begin
-        if(r_mc_done) begin
-            r_mc_mode <= `MC_MODE_CPU;
-            r_mc_done <= 0;
-            if(r_mc_mode==`MC_MODE_KEY) begin
-                r_consf_en <= (r_consf_cnts<=1) ? 0 : 1;
-                r_consf_head <= r_consf_head + 1;
-                r_consf_cnts <= r_consf_cnts - 1;
-            end
-        end
-
         if(w_cons_req) begin
             r_mc_mode <= `MC_MODE_CONS;
             r_mc_qnum <= w_cons_qnum;
@@ -355,6 +347,14 @@ module m_interconnect #(
             r_mc_mode <= `MC_MODE_MOUSE;
             r_mc_qnum <= w_mouse_qnum;
             r_mc_qsel <= w_mouse_qsel;
+        end else if(r_mc_done) begin
+            r_mc_mode <= `MC_MODE_CPU;
+            r_mc_done <= 0;
+            if(r_mc_mode==`MC_MODE_KEY) begin
+                r_consf_en <= (r_consf_cnts<=1) ? 0 : 1;
+                r_consf_head <= r_consf_head + 1;
+                r_consf_cnts <= r_consf_cnts - 1;
+            end
         end
 
 
