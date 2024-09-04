@@ -155,46 +155,49 @@ module m_RVCluster #(
     endgenerate
 
     /****************************** Cluster Arbiter ******************************/
-    generate
-        begin: arbiter
-            reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
-            always @ (posedge CLK) begin
-                if (!RST_X) begin
-                    r_hart_sel <= 0;
-                end else begin
-                    r_hart_sel <= (!w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
-                end
-            end
-
-            assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
-            assign w_cluster_daddr = w_core_daddr[r_hart_sel];
-            assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
-            assign w_cluster_data_ctrl = w_core_data_ctrl[r_hart_sel];
-            assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
-            assign w_cluster_data_we = w_core_data_we[r_hart_sel];
-            assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
-            assign w_cluster_iscode = w_core_iscode[r_hart_sel];
-            assign w_cluster_isread = w_core_isread[r_hart_sel];
-            assign w_cluster_iswrite = w_core_iswrite[r_hart_sel];
-            assign w_cluster_pte_we = w_core_pte_we[r_hart_sel];
-            assign w_cluster_pte_wdata = w_core_pte_wdata[r_hart_sel];
-            assign w_cluster_use_tlb = w_core_use_tlb[r_hart_sel];
-            assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
-            assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
-            assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
-            assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
-            assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
-            assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
-            for (g = 0; g < N_HARTS; g = g + 1) begin
-                assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : 1;
-                assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
-            end
+    reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
+    always @ (posedge CLK) begin
+        if (!RST_X) begin
+            r_hart_sel <= 0;
+        end else begin
+            r_hart_sel <= (!w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && !w_core_exmem_op_csr[r_hart_sel] && w_core_tkn[r_hart_sel]) ? (r_hart_sel == N_HARTS-1) ? 0 : r_hart_sel + 1 : r_hart_sel;
         end
-    endgenerate
+    end
 
-    // ila_0 your_instance_name (
-    //     .clk(CLK), // input wire clk
-    //     .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
-    //     .probe1(w_core_pc[1]) // input wire [31:0]  probe1
-    // );
+    assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
+    assign w_cluster_daddr = w_core_daddr[r_hart_sel];
+    assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
+    assign w_cluster_data_ctrl = w_core_data_ctrl[r_hart_sel];
+    assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
+    assign w_cluster_data_we = w_core_data_we[r_hart_sel];
+    assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
+    assign w_cluster_iscode = w_core_iscode[r_hart_sel];
+    assign w_cluster_isread = w_core_isread[r_hart_sel];
+    assign w_cluster_iswrite = w_core_iswrite[r_hart_sel];
+    assign w_cluster_pte_we = w_core_pte_we[r_hart_sel];
+    assign w_cluster_pte_wdata = w_core_pte_wdata[r_hart_sel];
+    assign w_cluster_use_tlb = w_core_use_tlb[r_hart_sel];
+    assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
+    assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
+    assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
+    assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
+    assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
+    assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
+    for (g = 0; g < N_HARTS; g = g + 1) begin
+        assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : 1;
+        assign w_core_dram_busy[g] = (r_hart_sel == g) ? w_dram_busy : 1;
+    end
+
+`ifdef SYNTHESIS
+    ila_0 your_instance_name (
+        .clk(CLK), // input wire clk
+        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+        .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
+        .probe2(cores_and_mmus[0].w_pagefault), // input wire [31:0]  probe2 
+        .probe3(cores_and_mmus[1].w_pagefault), // input wire [31:0]  probe3 
+        .probe4(r_hart_sel), // input wire [3:0]  probe4 
+        .probe5(cores_and_mmus[0].core.w_take_exception), // input wire [0:0]  probe5 
+        .probe6(cores_and_mmus[1].core.w_take_exception) // input wire [0:0]  probe6
+    );
+`endif
 endmodule
