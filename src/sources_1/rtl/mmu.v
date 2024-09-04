@@ -28,6 +28,9 @@ module m_mmu (
     output wire [31:0] w_tlb_pte_addr,
     output wire        w_tlb_acs
 );
+    localparam TLB_ADDR_WIDTH = 20;
+    localparam TLB_DATA_WIDTH = 22;
+    localparam TLB_ENTRY      = `TLB_SIZE;
 
     /***** Address translation ********************************************************************/
     reg  [31:0] physical_addr       = 0;
@@ -180,15 +183,15 @@ module m_mmu (
     wire        w_tlb_data_w_we   = (r_pw_state == 5 && !page_walk_fail && w_iswrite);
     wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
 
-    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
+    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
                                             w_insn_addr[31:12], w_insn_addr[31:12], w_tlb_wdata,
                                             w_tlb_inst_r_addr, w_tlb_inst_r_oe);
 
-    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
+    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_r_addr, w_tlb_data_r_oe);
 
-    m_cache_dmap#(20, 22, `TLB_SIZE) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
+    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
                                             w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
                                             w_tlb_data_w_addr, w_tlb_data_w_oe);
 
