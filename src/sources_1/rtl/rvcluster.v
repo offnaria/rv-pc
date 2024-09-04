@@ -3,7 +3,6 @@ module m_RVCluster #(
 )(
     input  wire               CLK,
     input  wire               RST_X,
-    input  wire               w_stall,
     input  wire [127:0]       w_insn_data,
     input  wire [127:0]       w_data_data,
     input  wire               w_is_dram_data,
@@ -92,7 +91,6 @@ module m_RVCluster #(
             ) core (
                 .CLK(CLK),
                 .RST_X(RST_X),
-                .w_stall(w_stall),
                 .w_insn_data(w_insn_data),
                 .w_data_data(w_data_data),
                 .w_is_dram_data(w_is_dram_data),

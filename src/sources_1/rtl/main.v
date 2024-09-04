@@ -387,7 +387,6 @@ module m_main(
     ) cluster(
         .CLK(CORE_CLK),
         .RST_X(CORE_RST_X),
-        .w_stall(w_mc_mode == 0),
         .w_insn_data(w_insn_data),
         .w_data_data(w_data_data),
         .w_is_dram_data(w_is_dram_data),

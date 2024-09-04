@@ -44,7 +44,6 @@ module m_RVCorePL_SMP#(
 (
     input  wire         CLK,
     input  wire         RST_X,
-    input  wire         w_stall,
     input  wire [127:0] w_insn_data,    // 128-bit instruction words
     input  wire [127:0] w_data_data,    // 128-bit data words
     input  wire         w_is_dram_data, // Indicates if w_data_data is from DRAM
