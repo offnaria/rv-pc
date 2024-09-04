@@ -28,7 +28,9 @@ module m_mmu (
     output wire [31:0] w_tlb_pte_addr,
     output wire        w_tlb_acs
 );
-    localparam TLB_ADDR_WIDTH = 20;
+    localparam VPN_WIDTH      = 20;
+    localparam ASID_WIDTH     = 9;
+    localparam TLB_ADDR_WIDTH = VPN_WIDTH + ASID_WIDTH;
     localparam TLB_DATA_WIDTH = 22;
     localparam TLB_ENTRY      = `TLB_SIZE;
 
@@ -57,7 +59,7 @@ module m_mmu (
 
     // Level 1
     wire [31:0] vpn1            = {22'b0, v_addr[31:22]};
-    wire [31:0] L1_pte_addr     = {w_satp[19:0], 12'b0} + {vpn1, 2'b0};
+    wire [31:0] L1_pte_addr     = {w_satp[21:0], 12'b0} + {vpn1, 2'b0}; // NOTE: Maybe w_satp[21:0] is correct, but RV-PC's storage is too small, so w_satp[19:0] might be enough.
     wire  [2:0] L1_xwr          = w_mstatus[19] ? (L1_pte[3:1] | L1_pte[5:3]) : L1_pte[3:1];
     wire [31:0] L1_paddr        = {L1_pte[29:10], 12'h0};
     wire [31:0] L1_p_addr       = {L1_paddr[31:22], v_addr[21:0]};
@@ -183,16 +185,20 @@ module m_mmu (
     wire        w_tlb_data_w_we   = (r_pw_state == 5 && !page_walk_fail && w_iswrite);
     wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
 
+    wire [ASID_WIDTH:0] w_asid = w_satp[30:22];
+    wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_addr = {w_insn_addr[31:12], w_asid};
+    wire [TLB_ADDR_WIDTH-1:0] w_tlb_data_addr = {w_data_addr[31:12], w_asid};
+
     m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
-                                            w_insn_addr[31:12], w_insn_addr[31:12], w_tlb_wdata,
+                                            w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata,
                                             w_tlb_inst_r_addr, w_tlb_inst_r_oe);
 
     m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
-                                            w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
+                                            w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata,
                                             w_tlb_data_r_addr, w_tlb_data_r_oe);
 
     m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
-                                            w_data_addr[31:12], w_data_addr[31:12], w_tlb_wdata,
+                                            w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata,
                                             w_tlb_data_w_addr, w_tlb_data_w_oe);
 
     reg  [31:0] r_tlb_pte_addr = 0;
