@@ -207,6 +207,7 @@ module plic #(
     // Core
     reg [W_INT_PRIO-1:0] w_int_prio [0:N_INT_SRC-1];
     reg [W_INT_PRIO-1:0] w_max_prio [0:N_HARTS-1];
+    reg [W_INT_PRIO-1:0] r_max_prio [0:N_HARTS-1];
     reg [W_INT_ID-1:0]   w_max_id   [0:N_HARTS-1];
     reg [N_HARTS-1:0]    r_eip = 0;
 
@@ -238,7 +239,7 @@ module plic #(
             r_eip <= 0;
         end else begin
             for (i = 0; i < N_HARTS; i = i + 1) begin
-                r_eip[i] <= (w_max_prio[i] > r_threshold[i]);
+                r_eip[i] <= (r_max_prio[i] > r_threshold[i]);
             end
         end
     end
@@ -247,6 +248,13 @@ module plic #(
     generate
         for (g = 0; g < N_HARTS; g = g + 1) begin
             assign w_eip[g] = r_eip[g];
+            always @(posedge CLK) begin
+                if (!RST_X) begin
+                    r_max_prio[g] <= 0;
+                end else begin
+                    r_max_prio[g] <= w_max_prio[g];
+                end
+            end
         end
     endgenerate
 
