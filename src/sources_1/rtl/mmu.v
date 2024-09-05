@@ -29,8 +29,8 @@ module m_mmu (
     output wire        w_tlb_acs
 );
     localparam VPN_WIDTH      = 20;
-    localparam ASID_WIDTH     = 9;
-    localparam TLB_ADDR_WIDTH = VPN_WIDTH + ASID_WIDTH;
+    localparam PPN_WIDTH      = 22;
+    localparam TLB_ADDR_WIDTH = VPN_WIDTH + PPN_WIDTH;
     localparam TLB_DATA_WIDTH = 22;
     localparam TLB_ENTRY      = `TLB_SIZE;
 
@@ -185,9 +185,9 @@ module m_mmu (
     wire        w_tlb_data_w_we   = (r_pw_state == 5 && !page_walk_fail && w_iswrite);
     wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
 
-    wire [ASID_WIDTH:0] w_asid = w_satp[30:22];
-    wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_addr = {w_insn_addr[31:12], w_asid};
-    wire [TLB_ADDR_WIDTH-1:0] w_tlb_data_addr = {w_data_addr[31:12], w_asid};
+    wire [PPN_WIDTH:0] w_ppn = w_satp[21:0];
+    wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_addr = {w_insn_addr[31:12], w_ppn};
+    wire [TLB_ADDR_WIDTH-1:0] w_tlb_data_addr = {w_data_addr[31:12], w_ppn};
 
     m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
                                             w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata,
