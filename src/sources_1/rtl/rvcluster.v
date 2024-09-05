@@ -19,8 +19,8 @@ module m_RVCluster #(
     input  wire               w_next_mode_is_mc,
 
     output wire               r_halt,
-    output wire [31:0]        w_cluster_iaddr,
-    output wire [31:0]        w_cluster_daddr,
+    (* keep = "true" *)output wire [31:0]        w_cluster_iaddr,
+    (* keep = "true" *)output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire [2:0]         w_cluster_data_ctrl,
     output wire               w_cluster_init_stage,
@@ -161,7 +161,7 @@ module m_RVCluster #(
 
     /****************************** Cluster Arbiter ******************************/
     reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
-    wire w_hart_sel_changable = !w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && w_core_interrupt_ok[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel] && (w_mmu_pagefault == ~0) && !w_core_csr_flush[r_hart_sel];
+    wire w_hart_sel_changable = !w_next_mode_is_mc && w_mode_is_cpu && w_core_next_state_is_idle[r_hart_sel] && w_core_interrupt_ok[r_hart_sel] && w_core_tkn[r_hart_sel] && !w_core_take_exception[r_hart_sel] && (w_mmu_pagefault == ~0) && !w_core_csr_flush[r_hart_sel] && !w_core_tlb_flush[r_hart_sel];
     always @ (posedge CLK) begin
         if (!RST_X) begin
             r_hart_sel <= 0;
@@ -194,16 +194,19 @@ module m_RVCluster #(
         assign w_core_pagefault[g] = (r_hart_sel == g) ? w_mmu_pagefault : ~0;
     end
 
-// `ifdef SYNTHESIS
-//     ila_0 your_instance_name (
-//         .clk(CLK), // input wire clk
-//         .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
-//         .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
-//         .probe2(cores_and_mmus[0].w_pagefault), // input wire [31:0]  probe2 
-//         .probe3(cores_and_mmus[1].w_pagefault), // input wire [31:0]  probe3 
-//         .probe4(r_hart_sel), // input wire [3:0]  probe4 
-//         .probe5(cores_and_mmus[0].core.w_take_exception), // input wire [0:0]  probe5 
-//         .probe6(cores_and_mmus[1].core.w_take_exception) // input wire [0:0]  probe6
-//     );
-// `endif
+`ifdef SYNTHESIS
+    ila_cluster ila_cluster (
+        .clk(CLK), // input wire clk
+        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+        .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
+        .probe2(w_cluster_iaddr), // input wire [31:0]  probe2 
+        .probe3(w_cluster_daddr), // input wire [31:0]  probe3 
+        .probe4(r_hart_sel), // input wire [3:0]  probe4 
+        .probe5(w_core_satp[0]), // input wire [31:0]  probe5 
+        .probe6(w_core_satp[1]), // input wire [31:0]  probe6
+        .probe7(w_mc_mode), // input wire [2:0]  probe7 
+        .probe8(w_cluster_tlb_use), // input wire [0:0]  probe8 
+	    .probe9(w_flush_all_tlbs) // input wire [0:0]  probe9
+    );
+`endif
 endmodule
