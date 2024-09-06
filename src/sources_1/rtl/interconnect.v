@@ -175,7 +175,7 @@ module m_interconnect #(
     wire [31:0] w_dram_addr =   (w_mode_is_mc)              ? w_mc_addr         :
                                 (w_iscode && !w_tlb_busy)   ? w_cluster_iaddr   :
                                 (w_is_paddr)                ? w_cluster_daddr   :
-                                (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_mem_paddr;
+                                (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_cluster_daddr;
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :
                                 (w_iscode && !w_tlb_busy)   ? `FUNCT3_LW____    : w_mem_ctrl;
