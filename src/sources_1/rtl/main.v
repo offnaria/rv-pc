@@ -139,7 +139,8 @@ module m_main(
     wire  [2:0] w_data_ctrl;
 
     wire [31:0] w_priv, w_satp;
-    wire        w_busy;
+    wire        w_interconnect_busy;
+    wire        w_busy = w_interconnect_busy || cluster.w_cluster_tlb_busy;
     wire        w_init_done;
     wire        w_init_stage;
 
@@ -299,12 +300,11 @@ module m_main(
         .w_use_tlb      (w_cluster_use_tlb),
         .w_tlb_hit      (w_cluster_tlb_hit),
         .w_pw_state     (w_cluster_pw_state),
-        .w_r_tlb_busy   (w_cluster_tlb_busy),
         .w_tlb_usage    (w_cluster_tlb_usage),
         .w_tlb_pte_addr (w_cluster_tlb_pte_addr),
         .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
-        .w_toproc_busy    (w_busy),
+        .w_interconnect_busy(w_interconnect_busy),
         .w_txd          (w_txd),
         .w_rxd          (w_rxd),
         .w_init_done    (w_init_done),
@@ -376,7 +376,6 @@ module m_main(
     wire        w_cluster_use_tlb;
     wire        w_cluster_tlb_hit;
     wire [2:0]  w_cluster_pw_state;
-    wire        w_cluster_tlb_busy;
     wire [2:0]  w_cluster_tlb_usage;
     wire [31:0] w_cluster_tlb_pte_addr;
     wire        w_cluster_tlb_acs;
@@ -389,7 +388,7 @@ module m_main(
         .w_insn_data(w_insn_data),
         .w_data_data(w_data_data),
         .w_is_dram_data(w_is_dram_data),
-        .w_busy(w_busy),
+        .w_interconnect_busy(w_interconnect_busy),
         .w_mc_mode(w_mc_mode),
         .w_mtip(w_mtip),
         .w_msip(w_msip),
@@ -416,7 +415,6 @@ module m_main(
         .w_cluster_use_tlb(w_cluster_use_tlb),
         .w_cluster_tlb_hit(w_cluster_tlb_hit),
         .w_cluster_pw_state(w_cluster_pw_state),
-        .w_cluster_tlb_busy(w_cluster_tlb_busy),
         .w_cluster_tlb_usage(w_cluster_tlb_usage),
         .w_cluster_tlb_pte_addr(w_cluster_tlb_pte_addr),
         .w_cluster_tlb_acs(w_cluster_tlb_acs)

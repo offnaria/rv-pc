@@ -6,7 +6,7 @@ module m_RVCluster #(
     input  wire [127:0]       w_insn_data,
     input  wire [127:0]       w_data_data,
     input  wire               w_is_dram_data,
-    input  wire               w_busy,
+    input  wire               w_interconnect_busy,
     input  wire [2:0]         w_mc_mode,
     input  wire [N_HARTS-1:0] w_mtip,
     input  wire [N_HARTS-1:0] w_msip,
@@ -34,11 +34,11 @@ module m_RVCluster #(
     output wire               w_cluster_use_tlb,
     output wire               w_cluster_tlb_hit,
     output wire [2:0]         w_cluster_pw_state,
-    output wire               w_cluster_tlb_busy,
     output wire [2:0]         w_cluster_tlb_usage,
     output wire [31:0]        w_cluster_tlb_pte_addr,
     output wire               w_cluster_tlb_acs
 );
+    wire w_cluster_tlb_busy;
 
     wire [31:0] w_core_iaddr        [0:N_HARTS-1];
     wire [31:0] w_core_daddr        [0:N_HARTS-1];
@@ -188,7 +188,7 @@ module m_RVCluster #(
     // assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
     // assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
     for (g = 0; g < N_HARTS; g = g + 1) begin
-        assign w_core_busy[g] = (r_hart_sel == g) ? w_busy : 1;
+        assign w_core_busy[g] = (r_hart_sel == g) ? w_interconnect_busy || w_cluster_tlb_busy : 1;
         assign w_core_pagefault[g] = (r_hart_sel == g) ? w_mmu_pagefault : ~0;
     end
 
