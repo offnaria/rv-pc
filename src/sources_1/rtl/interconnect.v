@@ -157,12 +157,12 @@ module m_interconnect #(
     /***********************************          Memory        ***********************************/
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
 
-    wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
-                                (w_is_paddr)                          ? w_data_ctrl       :
-                                (w_tlb_usage[1:0]!=0)                   ? w_data_ctrl       :
-                                (w_pw_state == 0)                     ? `FUNCT3_LW____    :
-                                (w_pw_state == 2)                     ? `FUNCT3_LW____    :
-                                (w_pw_state == 5)                     ? `FUNCT3_SW____    :
+    wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)        ? w_mc_ctrl         :
+                                (w_is_paddr)          ? w_data_ctrl       :
+                                (w_tlb_usage[1:0]!=0) ? w_data_ctrl       :
+                                (w_pw_state == 0)     ? `FUNCT3_LW____    :
+                                (w_pw_state == 2)     ? `FUNCT3_LW____    :
+                                (w_pw_state == 5)     ? `FUNCT3_SW____    :
                                 w_data_ctrl;
 
     wire  [3:0] w_dev       = w_mem_paddr[31:28];
@@ -183,10 +183,10 @@ module m_interconnect #(
     wire        w_dram_aces = (w_dram_addr[31:28] == 8 || w_dram_addr[31:28] == 0);
 
     assign w_dram_rd_en =
-                    (w_dram_busy)  ? 0 :
-                    (!w_dram_aces) ? 0 :
-                    (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
-                    (w_is_paddr)   ? (w_iscode || w_isread) :
+                    (w_dram_busy)         ? 0 :
+                    (!w_dram_aces)        ? 0 :
+                    (w_mode_is_mc)        ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
+                    (w_is_paddr)          ? (w_iscode || w_isread) :
                     (w_tlb_usage[2:1]!=0) ? 1 :
                     (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
 
