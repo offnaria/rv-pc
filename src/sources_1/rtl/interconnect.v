@@ -151,7 +151,8 @@ module m_interconnect #(
     wire  w_mode_is_cpu = r_mc_mode == `MC_MODE_CPU;
 
     wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata  : w_data_wdata;
-    wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_iswrite;
+    wire w_cpu_we = w_iswrite && !w_tlb_busy;
+    wire w_mem_we = (w_mode_is_mc) ? w_mc_we : w_cpu_we;
 
     /***********************************          Memory        ***********************************/
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
@@ -169,7 +170,7 @@ module m_interconnect #(
     assign w_offset         = w_mem_paddr & 28'h7ffffff;
 
     wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
-    wire        w_dram_we       = (w_mem_we && !w_tlb_busy && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
+    wire        w_dram_we       = (w_mem_we && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
 
     wire [31:0] w_dram_addr = (w_mode_is_mc)                          ? w_mc_addr       :
                               (w_iscode && !w_tlb_busy)               ? w_cluster_iaddr :
@@ -212,7 +213,7 @@ module m_interconnect #(
 
     /***********************************         Console        ***********************************/
     wire        w_cons_we   = (w_mode_is_mc) ? (w_mc_we && w_mem_paddr[31:12] == 20'h4000a) :
-                            (w_iswrite && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 0);
+                            (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 0);
     wire [31:0] w_cons_data;
     wire [31:0] w_cons_addr = (w_mode_is_mc) ? w_mem_paddr : {4'b0, w_offset};
     wire        w_cons_req;
@@ -223,7 +224,7 @@ module m_interconnect #(
 
     /***********************************           Disk         ***********************************/
     wire        w_disk_we   = (w_mode_is_mc) ? (w_mc_we && w_mem_paddr[31:12] == 20'h4000b) :
-                            (w_iswrite && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 1);
+                            (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 1);
     wire [31:0] w_disk_data;
     wire [31:0] w_disk_addr = (w_mode_is_mc) ? w_mem_paddr : {4'b0, w_offset};
     wire        w_disk_req;
@@ -234,7 +235,7 @@ module m_interconnect #(
 
     /***********************************      Ethernet MAC     ***********************************/
     wire        w_ether_we   = (w_mode_is_mc) ? (w_mc_we && (w_mem_paddr[31:12] == 20'h4000d || w_mem_paddr[31:12] == 20'h4000e)) :
-                            (w_iswrite && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 2);
+                            (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 2);
     wire [31:0] w_ether_data;
     wire [31:0] w_ether_addr = (w_mode_is_mc) ? w_mem_paddr : {4'b0, w_offset};
     wire        w_ether_send_req, w_ether_recv_req;
@@ -247,7 +248,7 @@ module m_interconnect #(
 
     /***********************************  　Keyboard     ***********************************/
     wire        w_keybrd_we   = (w_mode_is_mc) ? (w_mc_we && w_mem_paddr[31:12] == 20'h40010 ) :
-                            (w_iswrite && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 3);
+                            (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 3);
     wire [31:0] w_keybrd_data;
     wire [31:0] w_keybrd_addr = (w_mode_is_mc) ? w_mem_paddr : {4'b0, w_offset};
     wire        w_keybrd_req;
@@ -258,7 +259,7 @@ module m_interconnect #(
 
     /***********************************  　Mouse    ***********************************/
     wire        w_mouse_we   = (w_mode_is_mc) ? (w_mc_we && w_mem_paddr[31:12] == 20'h40011 ) :
-                            (w_iswrite && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 4);
+                            (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 4);
     wire [31:0] w_mouse_data;
     wire [31:0] w_mouse_addr = (w_mode_is_mc) ? w_mem_paddr : {4'b0, w_offset};
     wire        w_mouse_req;
@@ -268,7 +269,7 @@ module m_interconnect #(
     wire [31:0] w_mouse_qsel;
 
     /***********************************      Simple Framebuffer     ***********************************/
-    assign w_fb_we = (w_mem_we && !w_tlb_busy && w_dev == `VIRTIO_BASE_TADDR && w_virt == 5);
+    assign w_fb_we = (w_cpu_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 5);
     assign w_fb_wdata = w_mem_wdata;
 
     /***********************************          OUTPUT        ***********************************/
@@ -424,7 +425,7 @@ module m_interconnect #(
                         usb_ps2_clk, usb_ps2_data, w_ps2_mouse_we, w_ps2_mouse_data);
 
     /***********************************           PLIC         ***********************************/
-    assign w_plic_we = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_iswrite;
+    assign w_plic_we = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && w_cpu_we;
     assign w_plic_wdata = w_data_wdata;
     assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
@@ -569,7 +570,7 @@ module m_interconnect #(
                     (r_ctrl[1:0]==1) ? w_ld_lh : w_odata_t2;
 
     /*********************************          CLINT         *********************************/
-    assign w_clint_we = (w_mode_is_cpu && w_dev == `CLINT_BASE_TADDR) && !w_tlb_busy && w_iswrite;
+    assign w_clint_we = (w_mode_is_cpu && w_dev == `CLINT_BASE_TADDR) && w_cpu_we;
     assign w_clint_wdata = w_data_wdata;
 
     /***********************************      DRAM     ***********************************/
