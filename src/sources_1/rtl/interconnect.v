@@ -155,8 +155,6 @@ module m_interconnect #(
     wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
 
     /***********************************          Memory        ***********************************/
-    wire [31:0] w_insn_paddr =  w_cluster_iaddr;
-
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
@@ -172,12 +170,11 @@ module m_interconnect #(
     assign w_offset         = w_mem_paddr & 28'h7ffffff;
 
     wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
-    wire        w_dram_we       = (w_mem_we && !w_tlb_busy
-                                    && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
+    wire        w_dram_we       = (w_mem_we && !w_tlb_busy && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
 
     wire [31:0] w_dram_addr =   (w_mode_is_mc)              ? w_mc_addr         :
-                                (w_iscode && !w_tlb_busy)   ? w_insn_paddr      :
-                                (w_is_paddr)                ? w_cluster_daddr :
+                                (w_iscode && !w_tlb_busy)   ? w_cluster_iaddr   :
+                                (w_is_paddr)                ? w_cluster_daddr   :
                                 (w_tlb_acs && !w_tlb_hit)   ? w_tlb_pte_addr    : w_mem_paddr;
 
     wire [2:0]  w_dram_ctrl =   (w_mode_is_mc)              ? (w_mem_ctrl)      :
