@@ -39,6 +39,8 @@ module m_RVCluster #(
     output wire               w_cluster_tlb_acs
 );
     wire w_cluster_tlb_busy;
+    wire w_cluster_pw_done;
+    wire w_cluster_pw = w_cluster_use_tlb && !w_cluster_pw_done;
 
     wire [31:0] w_core_iaddr        [0:N_HARTS-1];
     wire [31:0] w_core_daddr        [0:N_HARTS-1];
@@ -154,7 +156,8 @@ module m_RVCluster #(
         .w_tlb_addr(w_core_tlb_addr),
         .w_tlb_usage(w_cluster_tlb_usage),
         .w_tlb_pte_addr(w_cluster_tlb_pte_addr),
-        .w_tlb_acs(w_cluster_tlb_acs)
+        .w_tlb_acs(w_cluster_tlb_acs),
+        .w_pw_done(w_cluster_pw_done)
     );
 
     /****************************** Cluster Arbiter ******************************/

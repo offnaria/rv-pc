@@ -26,7 +26,8 @@ module m_mmu (
     output wire [31:0] w_tlb_addr,
     output wire  [2:0] w_tlb_usage,
     output wire [31:0] w_tlb_pte_addr,
-    output wire        w_tlb_acs
+    output wire        w_tlb_acs,
+    output wire        w_pw_done
 );
     localparam VPN_WIDTH      = 20;
     localparam PPN_WIDTH      = 22;
@@ -103,6 +104,7 @@ module m_mmu (
     assign w_tlb_hit = ((w_iscode && w_tlb_inst_r_oe) ||
                             (w_isread && w_tlb_data_r_oe)  ||
                             (w_iswrite && w_tlb_data_w_oe));
+    assign w_pw_done = (r_pw_state == 7);
 
     // PAGE WALK state
     always@(posedge CLK) begin
