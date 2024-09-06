@@ -35,7 +35,7 @@ module m_RVCluster #(
     output wire               w_cluster_tlb_hit,
     output wire [2:0]         w_cluster_pw_state,
     output wire               w_cluster_tlb_busy,
-    output wire [2:0]         w_cluster_tlb_use,
+    output wire [2:0]         w_cluster_tlb_usage,
     output wire [31:0]        w_cluster_tlb_pte_addr,
     output wire               w_cluster_tlb_acs
 );
@@ -55,7 +55,7 @@ module m_RVCluster #(
     wire        w_core_tlb_hit      [0:N_HARTS-1];
     wire  [2:0] w_core_pw_state     [0:N_HARTS-1];
     wire        w_core_tlb_busy     [0:N_HARTS-1];
-    wire  [2:0] w_core_tlb_use      [0:N_HARTS-1];
+    wire  [2:0] w_core_tlb_usage    [0:N_HARTS-1];
     wire [31:0] w_core_tlb_pte_addr [0:N_HARTS-1];
     wire        w_core_tlb_acs      [0:N_HARTS-1];
 
@@ -152,7 +152,7 @@ module m_RVCluster #(
         .w_pw_state(w_cluster_pw_state),
         .w_tlb_busy(w_cluster_tlb_busy),
         .w_tlb_addr(w_core_tlb_addr),
-        .w_tlb_use(w_cluster_tlb_use),
+        .w_tlb_usage(w_cluster_tlb_usage),
         .w_tlb_pte_addr(w_cluster_tlb_pte_addr),
         .w_tlb_acs(w_cluster_tlb_acs)
     );
@@ -184,7 +184,7 @@ module m_RVCluster #(
     // assign w_cluster_tlb_hit = w_core_tlb_hit[r_hart_sel];
     // assign w_cluster_pw_state = w_core_pw_state[r_hart_sel];
     // assign w_cluster_tlb_busy = w_core_tlb_busy[r_hart_sel];
-    // assign w_cluster_tlb_use = w_core_tlb_use[r_hart_sel];
+    // assign w_cluster_tlb_usage = w_core_tlb_usage[r_hart_sel];
     // assign w_cluster_tlb_pte_addr = w_core_tlb_pte_addr[r_hart_sel];
     // assign w_cluster_tlb_acs = w_core_tlb_acs[r_hart_sel];
     for (g = 0; g < N_HARTS; g = g + 1) begin
@@ -203,7 +203,7 @@ module m_RVCluster #(
         .probe5(w_core_satp[0]), // input wire [31:0]  probe5 
         .probe6(w_core_satp[1]), // input wire [31:0]  probe6
         .probe7(w_mc_mode), // input wire [2:0]  probe7 
-        .probe8(w_cluster_tlb_use), // input wire [0:0]  probe8 
+        .probe8(w_cluster_tlb_usage), // input wire [0:0]  probe8 
 	    .probe9(w_flush_all_tlbs) // input wire [0:0]  probe9
     );
 `endif

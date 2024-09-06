@@ -32,7 +32,7 @@ module m_interconnect #(
     input  wire         w_tlb_hit,
     input  wire [2:0]   w_pw_state,
     input  wire         w_r_tlb_busy,
-    input  wire  [2:0]  w_tlb_use,
+    input  wire  [2:0]  w_tlb_usage,
     input  wire [31:0]  w_tlb_pte_addr,
     input  wire         w_tlb_acs,
     // MMU end
@@ -159,7 +159,7 @@ module m_interconnect #(
 
     wire [2:0]  w_mem_ctrl   =  (w_mode_is_mc)                        ? w_mc_ctrl         :
                                 (w_is_paddr)                          ? w_data_ctrl       :
-                                (w_tlb_use[1:0]!=0)                   ? w_data_ctrl       :
+                                (w_tlb_usage[1:0]!=0)                   ? w_data_ctrl       :
                                 (w_pw_state == 0)                     ? `FUNCT3_LW____    :
                                 (w_pw_state == 2)                     ? `FUNCT3_LW____    :
                                 (w_pw_state == 5)                     ? `FUNCT3_SW____    :
@@ -187,7 +187,7 @@ module m_interconnect #(
                     (!w_dram_aces) ? 0 :
                     (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) :
                     (w_is_paddr)   ? (w_iscode || w_isread) :
-                    (w_tlb_use[2:1]!=0) ? 1 :
+                    (w_tlb_usage[2:1]!=0) ? 1 :
                     (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
 
 

@@ -24,7 +24,7 @@ module m_mmu (
     output wire  [2:0] w_pw_state,
     output wire        w_tlb_busy,
     output wire [31:0] w_tlb_addr,
-    output wire  [2:0] w_tlb_use,
+    output wire  [2:0] w_tlb_usage,
     output wire [31:0] w_tlb_pte_addr,
     output wire        w_tlb_acs
 );
@@ -93,9 +93,9 @@ module m_mmu (
                                     (r_isread) ? `CAUSE_LOAD_PAGE_FAULT : `CAUSE_STORE_PAGE_FAULT;
 
     reg  [31:0] r_tlb_addr = 0;
-    reg   [2:0] r_tlb_use  = 0;
+    reg   [2:0] r_tlb_usage  = 0;
     assign w_tlb_addr = r_tlb_addr;
-    assign w_tlb_use  = r_tlb_use;
+    assign w_tlb_usage  = r_tlb_usage;
     wire [21:0] w_tlb_inst_r_addr, w_tlb_data_r_addr, w_tlb_data_w_addr;
     wire        w_tlb_inst_r_oe, w_tlb_data_r_oe, w_tlb_data_w_oe;
     assign w_use_tlb = (w_mode_is_cpu && (w_iscode || w_isread || w_iswrite)
@@ -123,7 +123,7 @@ module m_mmu (
                         3'b001 : r_tlb_addr <= {w_tlb_data_w_addr[21:2], w_data_addr[11:0]};
                         default: r_tlb_addr <= 0;
                     endcase
-                    r_tlb_use <= {w_iscode, w_isread, w_iswrite};
+                    r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                 end
                 {r_iscode, r_isread, r_iswrite} <= {w_iscode, w_isread, w_iswrite};
             end
@@ -173,9 +173,9 @@ module m_mmu (
         end
         else if(r_pw_state == 7) begin
             r_pw_state <= 0;
-            r_tlb_use <= 0;
+            r_tlb_usage <= 0;
             r_tlb_busy <= 0;
-            //$write("hoge!, %x, %x\n", page_walk_fail, r_tlb_use);
+            //$write("hoge!, %x, %x\n", page_walk_fail, r_tlb_usage);
         end
     end
 
