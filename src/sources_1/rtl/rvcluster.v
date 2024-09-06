@@ -45,7 +45,6 @@ module m_RVCluster #(
     wire [31:0] w_core_data_wdata   [0:N_HARTS-1];
     wire [2:0]  w_core_data_ctrl    [0:N_HARTS-1];
     wire        w_core_init_stage   [0:N_HARTS-1];
-    wire        w_core_data_we      [0:N_HARTS-1];
     wire        w_core_is_paddr     [0:N_HARTS-1];
     wire        w_core_iscode       [0:N_HARTS-1];
     wire        w_core_isread       [0:N_HARTS-1];
@@ -116,7 +115,6 @@ module m_RVCluster #(
                 .w_mstatus(w_core_mstatus[g]),
                 .w_init_stage(w_core_init_stage[g]),
                 .w_tlb_req(w_core_tlb_req[g]),
-                .w_data_we(w_core_data_we[g]),
                 .w_tlb_flush(w_core_tlb_flush[g])
             );
 
@@ -175,7 +173,7 @@ module m_RVCluster #(
     assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
     assign w_cluster_data_ctrl = w_core_data_ctrl[r_hart_sel];
     assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
-    assign w_cluster_data_we = w_core_data_we[r_hart_sel];
+    // assign w_cluster_data_we = w_core_data_we[r_hart_sel]; // TODO: Assign this
     assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
     // assign w_cluster_iscode = w_core_iscode[r_hart_sel];
     // assign w_cluster_isread = w_core_isread[r_hart_sel];

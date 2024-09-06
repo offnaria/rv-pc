@@ -66,7 +66,6 @@ module m_RVCorePL_SMP#(
     output wire [31:0]  w_mstatus,      // from register mstatus
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
-    output wire         w_data_we,      // from r_data_we, write enable for DRAM memory
     output wire         w_tlb_flush     // from r_tlb_flush
 );
 
@@ -1030,8 +1029,6 @@ module m_RVCorePL_SMP#(
     reg    data_wen;
     reg    data_ren;
     reg    inst_ren;
-
-    assign w_data_we = data_wen;
 
 /*********************************************/
     localparam  IDLE            = 0;

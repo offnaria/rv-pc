@@ -152,7 +152,7 @@ module m_interconnect #(
     wire  w_mode_is_cpu = r_mc_mode == `MC_MODE_CPU;
 
     wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata  : w_data_wdata;
-    wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_data_we;
+    wire        w_mem_we    = (w_mode_is_mc) ? w_mc_we     : w_iswrite;
 
     /***********************************          Memory        ***********************************/
     wire [31:0] w_mem_paddr  =  (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
