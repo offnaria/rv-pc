@@ -43,7 +43,6 @@ module m_interconnect #(
     output wire  [7:0]  w_uart_data,
     output wire         w_uart_we,
     input  wire         w_init_stage,
-    output wire [31:0]  w_checksum,
     input  wire         w_debug_btnd,
     input  wire         w_crs_dv_phy,
     output wire  [1:0]  w_txd_phy,
@@ -492,17 +491,6 @@ module m_interconnect #(
     assign       w_pl_init_data = loader_data;
     assign       w_pl_init_we   = loader_we;
     assign       w_pl_init_done = loader_done;
-
-    /**********************************************************************************************/
-
-    reg  [31:0]  r_checksum = 0;
-    always@(posedge CLK) begin
-        r_checksum <= (!RST_X)                      ? 0                             :
-                      (!w_init_done & w_pl_init_we) ? r_checksum + w_pl_init_data   :
-                      r_checksum;
-    end
-
-    assign w_checksum = r_checksum;
 
     /**********************************************************************************************/
 

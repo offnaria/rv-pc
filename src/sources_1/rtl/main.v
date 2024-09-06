@@ -257,7 +257,6 @@ module m_main(
     // Uart
     wire  [7:0] w_uart_data;
     wire        w_uart_we;
-    wire [31:0] w_checksum;
 
     wire w_finish;
     wire w_halt;
@@ -312,7 +311,6 @@ module m_main(
         .w_uart_data    (w_uart_data),
         .w_uart_we      (w_uart_we),
         .w_init_stage   (w_init_stage),
-        .w_checksum     (w_checksum),
         .w_debug_btnd   (w_btnd),
         .w_crs_dv_phy   (w_crs_dv_phy),
         .w_txd_phy      (w_txd_phy),
