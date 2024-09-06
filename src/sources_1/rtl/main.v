@@ -304,7 +304,7 @@ module m_main(
         .w_tlb_pte_addr (w_cluster_tlb_pte_addr),
         .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
-        .w_proc_busy    (w_busy),
+        .w_toproc_busy    (w_busy),
         .w_txd          (w_txd),
         .w_rxd          (w_rxd),
         .w_init_done    (w_init_done),

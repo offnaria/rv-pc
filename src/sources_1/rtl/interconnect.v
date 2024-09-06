@@ -36,7 +36,7 @@ module m_interconnect #(
     input  wire [31:0]  w_tlb_pte_addr,
     input  wire         w_tlb_acs,
     // MMU end
-    output wire         w_proc_busy,
+    output wire         w_toproc_busy,
     output wire         w_txd,
     input  wire         w_rxd,
     output wire         w_init_done,
@@ -436,7 +436,7 @@ module m_interconnect #(
     wire w_mc_busy = (w_mode_is_mc) ? 1 : 0;
 
     wire w_tx_ready;
-    assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
+    assign w_toproc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
     /**********************************************************************************************/
     reg         r_uart_we = 0;
     reg   [7:0] r_uart_data = 0;
