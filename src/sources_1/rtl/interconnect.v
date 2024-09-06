@@ -430,11 +430,10 @@ module m_interconnect #(
     assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
     /***********************************           BUSY         ***********************************/
-    assign w_tlb_busy =
-                    !(w_use_tlb)                            ? 0 :
-                    (w_pw_state == 7)                       ? 0 : 1;
+    assign w_tlb_busy = (!w_use_tlb)      ? 0 :
+                        (w_pw_state == 7) ? 0 : 1;
 
-    wire w_mc_busy =    (w_mode_is_mc) ? 1 : 0;
+    wire w_mc_busy = (w_mode_is_mc) ? 1 : 0;
 
     wire w_tx_ready;
     assign w_proc_busy = w_r_tlb_busy || w_mc_busy || w_dram_busy || !w_tx_ready;
