@@ -571,7 +571,7 @@ module m_interconnect #(
                     (r_ctrl[1:0]==1) ? w_ld_lh : w_odata_t2;
 
     /*********************************          CLINT         *********************************/
-    assign w_clint_we = (w_mode_is_cpu &&w_dev == `CLINT_BASE_TADDR && w_data_we != 0);
+    assign w_clint_we = (w_mode_is_cpu && w_dev == `CLINT_BASE_TADDR) && !w_tlb_busy && w_iswrite;
     assign w_clint_wdata = w_data_wdata;
 
     /***********************************      DRAM     ***********************************/
