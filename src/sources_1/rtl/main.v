@@ -300,7 +300,7 @@ module m_main(
         .w_tlb_hit      (w_cluster_tlb_hit),
         .w_pw_state     (w_cluster_pw_state),
         .w_r_tlb_busy   (w_cluster_tlb_busy),
-        .w_tlb_usage      (w_cluster_tlb_usage),
+        .w_tlb_usage    (w_cluster_tlb_usage),
         .w_tlb_pte_addr (w_cluster_tlb_pte_addr),
         .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
