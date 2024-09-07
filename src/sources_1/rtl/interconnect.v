@@ -12,10 +12,12 @@ module m_interconnect #(
 )
 (
     input  wire         CLK, clk_50mhz, RST_X,
-    input  wire [31:0]  w_cluster_iaddr, w_cluster_daddr,
     input  wire [31:0]  w_data_wdata,
-    input  wire         w_data_we,
-    input  wire  [2:0]  w_data_ctrl,
+    input  wire         w_cluster_data_we,
+    input  wire [31:0]  w_cluster_dev_addr,
+    input  wire [31:0]  w_cluster_dram_addr,
+    input  wire [2:0]   w_cluster_mem_ctrl,
+    input  wire         w_cluster_dram_re,
     output wire [127:0]  w_insn_data,
     output wire [127:0]  w_data_data,
     output wire         w_is_dram_data,
@@ -32,7 +34,6 @@ module m_interconnect #(
     input  wire         w_tlb_hit,
     input  wire [2:0]   w_pw_state,
     input  wire  [2:0]  w_tlb_usage,
-    input  wire [31:0]  w_tlb_pte_addr,
     input  wire         w_tlb_acs,
     // MMU end
     output wire         w_interconnect_busy,
@@ -151,11 +152,11 @@ module m_interconnect #(
     wire  w_mode_is_cpu = r_mc_mode == `MC_MODE_CPU;
 
     wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata  : w_data_wdata;
-    wire w_cluster_data_we = w_iswrite && !w_tlb_busy;
+    // wire w_cluster_data_we = w_iswrite && !w_tlb_busy;
     wire w_mem_we = (w_mode_is_mc) ? w_mc_we : w_cluster_data_we;
 
     /***********************************          Memory        ***********************************/
-    wire [31:0] w_dev_paddr = (w_mode_is_mc) ? w_mc_addr : w_cluster_daddr;
+    wire [31:0] w_dev_paddr = (w_mode_is_mc) ? w_mc_addr : w_cluster_dev_addr;
 
     wire  [3:0] w_dev       = w_dev_paddr[31:28];
     wire  [3:0] w_virt      = w_dev_paddr[27:24];
@@ -164,25 +165,25 @@ module m_interconnect #(
     wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
     wire        w_dram_we       = (w_mem_we && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
 
-    wire [31:0] w_cluster_dram_addr = (w_iscode && !w_tlb_busy) ? w_cluster_iaddr : (w_is_paddr || !w_tlb_acs || w_tlb_hit) ? w_cluster_daddr : w_tlb_pte_addr;
+    // wire [31:0] w_cluster_dram_addr = (w_iscode && !w_tlb_busy) ? w_cluster_iaddr : (w_is_paddr || !w_tlb_acs || w_tlb_hit) ? w_cluster_dev_addr : w_tlb_pte_addr;
     wire [31:0] w_dram_addr = (w_mode_is_mc) ? w_mc_addr : w_cluster_dram_addr;
 
-    wire [2:0] w_cluster_mem_ctrl = (w_iscode && !w_tlb_busy) ? `FUNCT3_LW____ : 
-                                    (w_is_paddr)              ? w_data_ctrl    :
-                                    (w_tlb_usage[1:0]!=0)     ? w_data_ctrl    :
-                                    (w_pw_state == 0)         ? `FUNCT3_LW____ :
-                                    (w_pw_state == 2)         ? `FUNCT3_LW____ :
-                                    (w_pw_state == 5)         ? `FUNCT3_SW____ :
-                                    w_data_ctrl;
+    // wire [2:0] w_cluster_mem_ctrl = (w_iscode && !w_tlb_busy) ? `FUNCT3_LW____ : 
+    //                                 (w_is_paddr)              ? w_data_ctrl    :
+    //                                 (w_tlb_usage[1:0]!=0)     ? w_data_ctrl    :
+    //                                 (w_pw_state == 0)         ? `FUNCT3_LW____ :
+    //                                 (w_pw_state == 2)         ? `FUNCT3_LW____ :
+    //                                 (w_pw_state == 5)         ? `FUNCT3_SW____ :
+    //                                 w_data_ctrl;
     wire [2:0]  w_dram_ctrl = (w_mode_is_mc) ? w_mc_ctrl : w_cluster_mem_ctrl;
 
     assign      w_insn_data =   w_dram_rdata128;
 
     wire        w_dram_aces = (w_dram_addr[31:28] == 8 || w_dram_addr[31:28] == 0);
 
-    wire w_cluster_dram_re = (w_is_paddr) ? (w_iscode || w_isread) :
-                             (w_tlb_usage[2:1]!=0) ? 1 :
-                             (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
+    // wire w_cluster_dram_re = (w_is_paddr) ? (w_iscode || w_isread) :
+    //                          (w_tlb_usage[2:1]!=0) ? 1 :
+    //                          (w_tlb_busy && !w_tlb_hit && (w_pw_state == 0 || w_pw_state==2)) ? 1 : 0;
     assign w_dram_rd_en = (w_dram_busy)  ? 0 :
                           (!w_dram_aces) ? 0 :
                           (w_mode_is_mc) ? (w_mc_aces==`ACCESS_READ && w_mc_addr[31:28] != 0) : w_cluster_dram_re;

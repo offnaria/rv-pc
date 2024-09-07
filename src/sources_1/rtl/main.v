@@ -273,6 +273,12 @@ module m_main(
 
     wire [27:0] w_offset;
 
+    wire         w_cluster_data_we;
+    wire [31:0]  w_cluster_dev_addr;
+    wire [31:0]  w_cluster_dram_addr;
+    wire [2:0]   w_cluster_mem_ctrl;
+    wire         w_cluster_dram_re; 
+
     m_interconnect #(
         .N_HARTS(N_HARTS)
     )
@@ -280,11 +286,12 @@ module m_main(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .RST_X          (RST_X),
-        .w_cluster_iaddr(w_cluster_iaddr),
-        .w_cluster_daddr(w_cluster_daddr),
         .w_data_wdata   (w_data_wdata),
-        .w_data_we      (w_data_we),
-        .w_data_ctrl    (w_data_ctrl),
+        .w_cluster_data_we  (w_cluster_data_we),
+        .w_cluster_dev_addr (w_cluster_dev_addr),
+        .w_cluster_dram_addr(w_cluster_dram_addr),
+        .w_cluster_mem_ctrl (w_cluster_mem_ctrl),
+        .w_cluster_dram_re  (w_cluster_dram_re),
         .w_insn_data    (w_insn_data),
         .w_data_data    (w_data_data),
         .w_is_dram_data (w_is_dram_data),
@@ -301,7 +308,6 @@ module m_main(
         .w_tlb_hit      (w_cluster_tlb_hit),
         .w_pw_state     (w_cluster_pw_state),
         .w_tlb_usage    (w_cluster_tlb_usage),
-        .w_tlb_pte_addr (w_cluster_tlb_pte_addr),
         .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
         .w_interconnect_busy(w_interconnect_busy),
@@ -403,9 +409,7 @@ module m_main(
         .w_cluster_iaddr(w_cluster_iaddr),
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_data_wdata),
-        .w_cluster_data_ctrl(w_data_ctrl),
         .w_cluster_init_stage(w_init_stage),
-        .w_cluster_data_we(w_data_we),
         .w_cluster_is_paddr(w_cluster_is_paddr),
         .w_cluster_iscode(w_cluster_iscode),
         .w_cluster_isread(w_cluster_isread),
@@ -417,7 +421,12 @@ module m_main(
         .w_cluster_pw_state(w_cluster_pw_state),
         .w_cluster_tlb_usage(w_cluster_tlb_usage),
         .w_cluster_tlb_pte_addr(w_cluster_tlb_pte_addr),
-        .w_cluster_tlb_acs(w_cluster_tlb_acs)
+        .w_cluster_tlb_acs(w_cluster_tlb_acs),
+        .w_cluster_data_we  (w_cluster_data_we),
+        .w_cluster_dev_addr (w_cluster_dev_addr),
+        .w_cluster_dram_addr(w_cluster_dram_addr),
+        .w_cluster_mem_ctrl (w_cluster_mem_ctrl),
+        .w_cluster_dram_re  (w_cluster_dram_re)
     );
 `ifdef SYNTHESIS
     generate

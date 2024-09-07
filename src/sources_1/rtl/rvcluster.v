@@ -22,9 +22,7 @@ module m_RVCluster #(
     (* keep = "true" *)output wire [31:0]        w_cluster_iaddr,
     (* keep = "true" *)output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
-    output wire [2:0]         w_cluster_data_ctrl,
     output wire               w_cluster_init_stage,
-    output wire               w_cluster_data_we,
     output wire               w_cluster_is_paddr,
     output wire               w_cluster_iscode,
     output wire               w_cluster_isread,
@@ -36,16 +34,35 @@ module m_RVCluster #(
     output wire [2:0]         w_cluster_pw_state,
     output wire [2:0]         w_cluster_tlb_usage,
     output wire [31:0]        w_cluster_tlb_pte_addr,
-    output wire               w_cluster_tlb_acs
+    output wire               w_cluster_tlb_acs,
+    output wire               w_cluster_data_we,
+    output wire [31:0]        w_cluster_dev_addr,
+    output wire [31:0]        w_cluster_dram_addr,
+    output wire [2:0]         w_cluster_mem_ctrl,
+    output wire               w_cluster_dram_re
 );
     wire w_cluster_tlb_busy;
     wire w_cluster_pw_done;
-    wire w_cluster_pw = w_cluster_use_tlb && !w_cluster_pw_done;
+    wire w_cluster_pw_running = w_cluster_use_tlb && !w_cluster_pw_done;
+
+    assign w_cluster_data_we   = w_cluster_iswrite && !w_cluster_pw_running;
+    assign w_cluster_dev_addr  = w_cluster_daddr;
+    assign w_cluster_dram_addr = (w_cluster_iscode && !w_cluster_pw_running) ? w_cluster_iaddr : (w_cluster_is_paddr || !w_cluster_tlb_acs || w_cluster_tlb_hit) ? w_cluster_dev_addr : w_cluster_tlb_pte_addr;
+    assign w_cluster_mem_ctrl  = (w_cluster_iscode && !w_cluster_pw_running) ? `FUNCT3_LW____ : 
+                                 (w_cluster_is_paddr)                        ? w_core_mem_ctrl[r_hart_sel] :
+                                 (w_cluster_tlb_usage[1:0]!=0)               ? w_core_mem_ctrl[r_hart_sel] :
+                                 (w_cluster_pw_state == 0)                   ? `FUNCT3_LW____              :
+                                 (w_cluster_pw_state == 2)                   ? `FUNCT3_LW____              :
+                                 (w_cluster_pw_state == 5)                   ? `FUNCT3_SW____              :
+                                 w_core_mem_ctrl[r_hart_sel];
+    assign w_cluster_dram_re   = (w_cluster_is_paddr) ? (w_cluster_iscode || w_cluster_isread) :
+                                 (w_cluster_tlb_usage[2:1]!=0) ? 1 :
+                                 (w_cluster_pw_running && !w_cluster_tlb_hit && (w_cluster_pw_state == 0 || w_cluster_pw_state==2)) ? 1 : 0;
 
     wire [31:0] w_core_iaddr        [0:N_HARTS-1];
     wire [31:0] w_core_daddr        [0:N_HARTS-1];
     wire [31:0] w_core_data_wdata   [0:N_HARTS-1];
-    wire [2:0]  w_core_data_ctrl    [0:N_HARTS-1];
+    wire [2:0]  w_core_mem_ctrl     [0:N_HARTS-1];
     wire        w_core_init_stage   [0:N_HARTS-1];
     wire        w_core_is_paddr     [0:N_HARTS-1];
     wire        w_core_iscode       [0:N_HARTS-1];
@@ -110,7 +127,7 @@ module m_RVCluster #(
                 .r_halt(r_halt),
                 .w_data_wdata(w_core_data_wdata[g]),
                 .w_insn_addr(w_core_local_iaddr[g]),
-                .w_data_ctrl(w_core_data_ctrl[g]),
+                .w_data_ctrl(w_core_mem_ctrl[g]),
                 .w_data_addr(w_core_local_daddr[g]),
                 .w_priv(w_core_priv[g]),
                 .w_satp(w_core_satp[g]),
@@ -174,7 +191,6 @@ module m_RVCluster #(
     assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
     assign w_cluster_daddr = w_core_daddr[r_hart_sel];
     assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
-    assign w_cluster_data_ctrl = w_core_data_ctrl[r_hart_sel];
     assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
     // assign w_cluster_data_we = w_core_data_we[r_hart_sel]; // TODO: Assign this
     assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];
