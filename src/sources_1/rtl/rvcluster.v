@@ -41,6 +41,9 @@ module m_RVCluster #(
     output wire [2:0]         w_cluster_mem_ctrl,
     output wire               w_cluster_dram_re
 );
+
+    localparam DEBUG = 0;
+
     wire w_cluster_tlb_busy;
     wire w_cluster_pw_done;
     wire w_cluster_pw_running = w_cluster_use_tlb && !w_cluster_pw_done;
@@ -212,18 +215,22 @@ module m_RVCluster #(
     end
 
 `ifdef SYNTHESIS
-    ila_cluster ila_cluster (
-        .clk(CLK), // input wire clk
-        .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
-        .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
-        .probe2(w_cluster_iaddr), // input wire [31:0]  probe2 
-        .probe3(w_cluster_daddr), // input wire [31:0]  probe3 
-        .probe4(r_hart_sel), // input wire [3:0]  probe4 
-        .probe5(w_core_satp[0]), // input wire [31:0]  probe5 
-        .probe6(w_core_satp[1]), // input wire [31:0]  probe6
-        .probe7(w_mc_mode), // input wire [2:0]  probe7 
-        .probe8(w_cluster_tlb_usage), // input wire [0:0]  probe8 
-	    .probe9(w_flush_all_tlbs) // input wire [0:0]  probe9
-    );
+generate
+    if (DEBUG) begin
+        ila_cluster ila_cluster (
+            .clk(CLK), // input wire clk
+            .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
+            .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
+            .probe2(w_cluster_iaddr), // input wire [31:0]  probe2 
+            .probe3(w_cluster_daddr), // input wire [31:0]  probe3 
+            .probe4(r_hart_sel), // input wire [3:0]  probe4 
+            .probe5(w_core_satp[0]), // input wire [31:0]  probe5 
+            .probe6(w_core_satp[1]), // input wire [31:0]  probe6
+            .probe7(w_mc_mode), // input wire [2:0]  probe7 
+            .probe8(w_cluster_tlb_usage), // input wire [0:0]  probe8 
+            .probe9(w_flush_all_tlbs) // input wire [0:0]  probe9
+        );
+    end
+endgenerate
 `endif
 endmodule
