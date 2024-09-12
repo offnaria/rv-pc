@@ -105,6 +105,7 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/ip/clk_wiz_1/clk_wiz_1.xci" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/define.vh" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/VGA.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/cache.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/clint.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/console.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/debug.v" ]\
