@@ -55,6 +55,9 @@ module m_RVCorePL_SMP#(
     input  wire         w_meip,         // Machine external interrupt signal from PLIC
     input  wire         w_seip,         // Supervisor external interrupt signal from PLIC
     input  wire [63:0]  w_mtime,        // Timer from CLINT
+    input  wire         w_cache_invalidate,
+    input  wire [31:0]  w_cache_invalidate_address,
+    input  wire         w_flush_all_tlbs,
 
     output reg          r_halt,         // register, set if the processor is halted
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
@@ -69,8 +72,10 @@ module m_RVCorePL_SMP#(
     output wire         w_tlb_flush     // from r_tlb_flush
 );
 
-    localparam ENABLE_ICACHE=0;
+    localparam ENABLE_ICACHE=1;
     localparam ENABLE_DCACHE=0;
+
+    localparam DEBUG_ICACHE = 0;
 
     localparam MIP_SSIP_BIT   = 1;
     localparam MIP_MSIP_BIT   = 3;
@@ -257,32 +262,110 @@ module m_RVCorePL_SMP#(
     reg  fetch_from_cache;
     wire [127:0] w_inst_cache_odata;
     wire w_inst_cache_hit;
-    wire w_inst_cache_flush = tlb_flush | w_mc_mode == `MC_MODE_DISK | IdEx_op_FENCEI;
+    wire w_inst_cache_flush = tlb_flush || w_mc_mode == `MC_MODE_DISK || IdEx_op_FENCEI || w_flush_all_tlbs;
     wire [127:0] w_instruction128;
     wire [6:0] w_inst_offset = {pc[3:2], 5'b0};
 
+    // always @(posedge CLK) begin
+    //     if (w_cache_invalidate) $write("%016h %1d %08h\n", mtime, mhartid, w_cache_invalidate_address);
+    // end
+
     generate
         if (ENABLE_ICACHE) begin
-            m_cache_dmap #(
-                .ADDR_WIDTH(28), // for 4-word blocks
-                .D_WIDTH(128),
-                .ENTRY(32)
+            localparam W_ICACHE_DATA = 128;
+            localparam N_ICACHE_ENTRY = 32;
+            localparam W_ICACHE_INDEX = $clog2(N_ICACHE_ENTRY);
+            localparam ICACHE_BYTE_OFFSET = $clog2(W_ICACHE_DATA/8);
+            // m_cache_dmap #(
+            //     .ADDR_WIDTH(28), // for 4-word blocks
+            //     .D_WIDTH(W_ICACHE_DATA),
+            //     .ENTRY(N_ICACHE_ENTRY)
+            // ) inst_cache (
+            //     .CLK(CLK),
+            //     .RST_X(RST_X),
+            //     .w_flush(w_inst_cache_flush),
+            //     .w_we(inst_cache_we),
+            //     .w_waddr(pc[31:4]),
+            //     .w_raddr(pc[31:4]),
+            //     .w_idata(w_insn_data),
+            //     .w_odata(w_inst_cache_odata),
+            //     .w_oe(w_inst_cache_hit)
+            // );
+            m_cache_dmap_invalidatable #(
+                .VECTOR(1),
+                .W_ADDR(28),
+                .W_DATA(W_ICACHE_DATA),
+                .N_ENTRY(N_ICACHE_ENTRY)
             ) inst_cache (
                 .CLK(CLK),
                 .RST_X(RST_X),
                 .w_flush(w_inst_cache_flush),
                 .w_we(inst_cache_we),
-                .w_waddr(pc[31:4]),
-                .w_raddr(pc[31:4]),
-                .w_idata(w_insn_data),
-                .w_odata(w_inst_cache_odata),
-                .w_oe(w_inst_cache_hit)
+                .w_waddr(pc[31:ICACHE_BYTE_OFFSET]),
+                .w_raddr(pc[31:ICACHE_BYTE_OFFSET]),
+                .w_wdata(w_insn_data),
+                .w_invalidate(w_cache_invalidate),
+                .w_invalidate_index(w_cache_invalidate_address[ICACHE_BYTE_OFFSET +: W_ICACHE_INDEX]),
+                .w_rdata(w_inst_cache_odata),
+                .w_hit(w_inst_cache_hit)
             );
             assign w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data);
         end else begin
             assign w_inst_cache_odata = 128'd0;
             assign w_inst_cache_hit = 1'b0;
             assign w_instruction128 = w_insn_data;
+            if (DEBUG_ICACHE) begin
+                wire [127:0] w_debug_inst_cache_odata;
+                wire         w_debug_inst_cache_hit;
+                m_cache_dmap #(
+                    .ADDR_WIDTH(28), // for 4-word blocks
+                    .D_WIDTH(128),
+                    .ENTRY(32)
+                ) inst_cache (
+                    .CLK(CLK),
+                    .RST_X(RST_X),
+                    .w_flush(w_inst_cache_flush),
+                    .w_we(inst_cache_we),
+                    .w_waddr(pc[31:4]),
+                    .w_raddr(pc[31:4]),
+                    .w_idata(w_insn_data),
+                    .w_odata(w_debug_inst_cache_odata),
+                    .w_oe(w_debug_inst_cache_hit)
+                );
+                reg [127:0] r_debug_insn_data;
+                // reg [127:0] r_debug_inst_cache_odata;
+                reg         r_debug_inst_cache_hit;
+                reg         r_debug_busy;
+                reg  [31:0] r_debug_pc;
+                reg   [3:0] r_mem_access_state;
+                wire w_debug_trigger = (r_debug_insn_data != w_debug_inst_cache_odata) && r_debug_inst_cache_hit && (r_mem_access_state == INST_READ) && (mem_access_state == IDLE);
+                always @(posedge CLK) begin
+                    if (!RST_X) begin
+                        r_debug_insn_data <= 128'd0;
+                        // r_debug_inst_cache_odata <= 128'd0;
+                        r_debug_inst_cache_hit <= 1'b0;
+                        r_debug_busy <= 1'b0;
+                        r_debug_pc <= 32'd0;
+                        r_mem_access_state <= IDLE;
+                    end else begin
+                        r_debug_insn_data <= w_insn_data;
+                        // r_debug_inst_cache_odata <= w_debug_inst_cache_odata;
+                        r_debug_inst_cache_hit <= w_debug_inst_cache_hit;
+                        r_debug_busy <= w_busy;
+                        r_debug_pc <= pc;
+                        r_mem_access_state <= mem_access_state;
+                    end
+                end
+                ila_icache ila_icache0 (
+                    .clk(CLK), // input wire clk
+                    .probe0(r_debug_insn_data), // input wire [127:0]  probe0  
+                    .probe1(w_debug_inst_cache_odata), // input wire [127:0]  probe1 
+                    .probe2(r_debug_inst_cache_hit), // input wire [0:0]  probe2 
+                    .probe3(r_debug_busy), // input wire [0:0]  probe3 
+                    .probe4(r_debug_pc), // input wire [31:0]  probe4
+                    .probe5(w_debug_trigger) // input wire [0:0] probe5
+                );
+            end
         end
     endgenerate
 
