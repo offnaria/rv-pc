@@ -233,9 +233,9 @@ module m_main(
 
     // 7seg
     reg  [31:0] r_init_cycles = 0;
-    wire [31:0] w_core_odata = cluster.cores_and_mmus[0].core.inst_cnt;
-    wire [31:0] w_core_pc = cluster.cores_and_mmus[0].core.pc;
-    wire [31:0] w_core_ir = cluster.cores_and_mmus[0].core.w_instruction;
+    wire [31:0] w_core_odata = cluster.cores_and_mmus[0].core_wrapper.core_inst.inst_cnt;
+    wire [31:0] w_core_pc = cluster.cores_and_mmus[0].core_wrapper.core_inst.pc;
+    wire [31:0] w_core_ir = cluster.cores_and_mmus[0].core_wrapper.core_inst.w_instruction;
     wire [31:0] w_7seg_data = (w_btnu) ? 0: (w_btnd) ? 0: (w_btnc) ? 0:
                 (w_btnl) ? w_core_pc  : (w_btnr) ? w_core_ir : led_data;
     wire w_init_start;

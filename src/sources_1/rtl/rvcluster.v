@@ -110,9 +110,10 @@ module m_RVCluster #(
             assign w_core_iaddr[g] = (w_core_is_paddr[g]) ? w_core_local_iaddr[g] : w_core_tlb_addr;
             assign w_core_daddr[g] = (w_core_is_paddr[g]) ? w_core_local_daddr[g] : w_core_tlb_addr;
 
-            m_RVCorePL_SMP #(
+            m_RVCorePL_wrapper #(
+                .CACHED(0),
                 .MHARTID(g)
-            ) core (
+            ) core_wrapper (
                 .CLK(CLK),
                 .RST_X(RST_X),
                 .w_insn_data(w_insn_data),
@@ -141,13 +142,13 @@ module m_RVCluster #(
                 .w_tlb_flush(w_core_tlb_flush[g])
             );
 
-            assign w_core_next_state_is_idle[g] = (core.next_state == 0);
-            assign w_core_mem_access_state_is_idle[g] = (core.mem_access_state == 0);
-            assign w_core_interrupt_ok[g] = core.w_interrupt_ok;
-            assign w_core_tkn[g] = core.tkn;
-            assign w_core_pc[g] = core.pc;
-            assign w_core_take_exception[g] = core.w_take_exception;
-            assign w_core_csr_flush[g] = core.w_csr_flush;
+            assign w_core_next_state_is_idle[g] = (core_wrapper.core_inst.next_state == 0);
+            assign w_core_mem_access_state_is_idle[g] = (core_wrapper.core_inst.mem_access_state == 0);
+            assign w_core_interrupt_ok[g] = core_wrapper.core_inst.w_interrupt_ok;
+            assign w_core_tkn[g] = core_wrapper.core_inst.tkn;
+            assign w_core_pc[g] = core_wrapper.core_inst.pc;
+            assign w_core_take_exception[g] = core_wrapper.core_inst.w_take_exception;
+            assign w_core_csr_flush[g] = core_wrapper.core_inst.w_csr_flush;
         end
     endgenerate
 

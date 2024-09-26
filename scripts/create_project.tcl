@@ -123,6 +123,7 @@ set files [list \
  [file normalize "${origin_dir}/src/sources_1/rtl/plic.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/ps2interface.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcluster.v" ]\
+ [file normalize "${origin_dir}/src/sources_1/rtl/rvcorepl_wrapper.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcorepl-smp.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/rvcluster.v" ]\
  [file normalize "${origin_dir}/src/sources_1/rtl/sdccont.v" ]\
