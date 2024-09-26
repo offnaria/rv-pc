@@ -18,7 +18,6 @@ module m_RVCluster #(
     input  wire               w_mode_is_cpu,
     input  wire               w_next_mode_is_mc,
 
-    output wire               r_halt,
     (* keep = "true" *)output wire [31:0]        w_cluster_iaddr,
     (* keep = "true" *)output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
@@ -130,7 +129,6 @@ module m_RVCluster #(
                 .w_cache_invalidate(w_cluster_data_we && (r_hart_sel != g) && (w_cluster_dev_addr[31:28] == `MEM_BASE_TADDR)),
                 .w_cache_invalidate_address(w_cluster_dev_addr),
                 .w_flush_all_tlbs(w_flush_all_tlbs),
-                .r_halt(r_halt),
                 .w_data_wdata(w_core_data_wdata[g]),
                 .w_insn_addr(w_core_local_iaddr[g]),
                 .w_data_ctrl(w_core_mem_ctrl[g]),

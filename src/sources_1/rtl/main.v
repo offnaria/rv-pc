@@ -260,14 +260,13 @@ module m_main(
     wire        w_uart_we;
 
     wire w_finish;
-    wire w_halt;
 
     wire [15:0] w_led_t = (w_busy << 12) | (w_mc_mode << 8)
                         | ({interconn.w_pl_init_done, interconn.r_disk_done, interconn.r_bbl_done, interconn.r_zero_done} << 4) | interconn.r_init_state;
 
     // stop and count
     always@(posedge CORE_CLK) begin
-        if(w_btnc | w_halt | w_finish | (w_core_odata > `TIMEOUT)) r_stop <= 1;
+        if(w_btnc | w_finish | (w_core_odata > `TIMEOUT)) r_stop <= 1;
         if(w_init_done && !r_stop && w_led_t[9:8] == 0) r_core_cnt <= r_core_cnt + 1;
     end
 
@@ -405,7 +404,6 @@ module m_main(
         .w_dram_odata(interconn.w_dram_odata),
         .w_mode_is_cpu(interconn.w_mode_is_cpu),
         .w_next_mode_is_mc(interconn.w_virtio_req),
-        .r_halt(w_halt),
         .w_cluster_iaddr(w_cluster_iaddr),
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_data_wdata),

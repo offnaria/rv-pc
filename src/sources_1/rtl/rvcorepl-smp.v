@@ -59,7 +59,6 @@ module m_RVCorePL_SMP#(
     input  wire [31:0]  w_cache_invalidate_address,
     input  wire         w_flush_all_tlbs,
 
-    output reg          r_halt,         // register, set if the processor is halted
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
     output wire [2:0]   w_data_ctrl,    // from r_data_ctrl
@@ -72,7 +71,7 @@ module m_RVCorePL_SMP#(
     output wire         w_tlb_flush     // from r_tlb_flush
 );
 
-    localparam ENABLE_ICACHE=1;
+    localparam ENABLE_ICACHE=0;
     localparam ENABLE_DCACHE=0;
 
     localparam DEBUG_ICACHE = 0;
@@ -875,7 +874,7 @@ module m_RVCorePL_SMP#(
                    (w_take_interrupt) ? (mideleg & w_irq_t) != 0 : ((medeleg >> cause) & 1 != 0);
 
     always @ (posedge CLK) begin
-        if (!RST_X || r_halt) begin
+        if (!RST_X) begin
             pc <= `D_START_PC;
         end else if (w_take_interrupt) begin
             pc <= (w_deleg) ? stvec : mtvec;
@@ -1351,9 +1350,6 @@ module m_RVCorePL_SMP#(
     assign MemWb_stall = ExMem_stall;
     assign MemWb_flush = w_take_exception | w_take_interrupt | w_csr_flush;
 
-
-    /**********************************************************************************************/
-    initial r_halt = 0;
 endmodule
 /**************************************************************************************************/
 
