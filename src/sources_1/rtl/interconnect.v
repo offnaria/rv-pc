@@ -12,7 +12,7 @@ module m_interconnect #(
 )
 (
     input  wire         CLK, clk_50mhz, RST_X,
-    input  wire [31:0]  w_data_wdata,
+    input  wire [31:0]  w_cluster_data_wdata,
     input  wire         w_cluster_data_we,
     input  wire [31:0]  w_cluster_dev_addr,
     input  wire [31:0]  w_cluster_dram_addr,
@@ -151,7 +151,7 @@ module m_interconnect #(
     wire  w_mode_is_mc  = r_mc_mode != `MC_MODE_CPU;
     wire  w_mode_is_cpu = r_mc_mode == `MC_MODE_CPU;
 
-    wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata  : w_data_wdata;
+    wire [31:0] w_mem_wdata = (w_mode_is_mc) ? w_mc_wdata : w_cluster_data_wdata;
     // wire w_cluster_data_we = w_iswrite && !w_tlb_busy;
     wire w_mem_we = (w_mode_is_mc) ? w_mc_we : w_cluster_data_we;
 
@@ -423,7 +423,7 @@ module m_interconnect #(
 
     /***********************************           PLIC         ***********************************/
     assign w_plic_we = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && w_cluster_data_we;
-    assign w_plic_wdata = w_data_wdata;
+    assign w_plic_wdata = w_cluster_data_wdata;
     assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
 
     /***********************************           BUSY         ***********************************/
@@ -568,7 +568,7 @@ module m_interconnect #(
 
     /*********************************          CLINT         *********************************/
     assign w_clint_we = (w_mode_is_cpu && w_dev == `CLINT_BASE_TADDR) && w_cluster_data_we;
-    assign w_clint_wdata = w_data_wdata;
+    assign w_clint_wdata = w_cluster_data_wdata;
 
     /***********************************      DRAM     ***********************************/
     assign w_dram_wr_en = w_zero_we || w_pl_init_we || w_dram_we_t;

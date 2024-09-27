@@ -134,7 +134,7 @@ module m_main(
     wire [127:0] w_insn_data;
     wire [127:0] w_data_data;
     wire        w_is_dram_data;
-    wire [31:0] w_data_wdata;
+    wire [31:0] w_cluster_data_wdata;
     wire        w_data_we;
     wire  [2:0] w_data_ctrl;
 
@@ -285,12 +285,12 @@ module m_main(
         .CLK            (CORE_CLK),
         .clk_50mhz      (clk_50mhz),
         .RST_X          (RST_X),
-        .w_data_wdata   (w_data_wdata),
-        .w_cluster_data_we  (w_cluster_data_we),
-        .w_cluster_dev_addr (w_cluster_dev_addr),
-        .w_cluster_dram_addr(w_cluster_dram_addr),
-        .w_cluster_mem_ctrl (w_cluster_mem_ctrl),
-        .w_cluster_dram_re  (w_cluster_dram_re),
+        .w_cluster_data_wdata(w_cluster_data_wdata),
+        .w_cluster_data_we   (w_cluster_data_we),
+        .w_cluster_dev_addr  (w_cluster_dev_addr),
+        .w_cluster_dram_addr (w_cluster_dram_addr),
+        .w_cluster_mem_ctrl  (w_cluster_mem_ctrl),
+        .w_cluster_dram_re   (w_cluster_dram_re),
         .w_insn_data    (w_insn_data),
         .w_data_data    (w_data_data),
         .w_is_dram_data (w_is_dram_data),
@@ -406,7 +406,7 @@ module m_main(
         .w_next_mode_is_mc(interconn.w_virtio_req),
         .w_cluster_iaddr(w_cluster_iaddr),
         .w_cluster_daddr(w_cluster_daddr),
-        .w_cluster_data_wdata(w_data_wdata),
+        .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
         .w_cluster_is_paddr(w_cluster_is_paddr),
         .w_cluster_iscode(w_cluster_iscode),
