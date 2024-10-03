@@ -35,6 +35,10 @@ module m_mmu (
     localparam TLB_DATA_WIDTH = 22;
     localparam TLB_ENTRY      = `TLB_SIZE;
 
+    localparam ENABLE_ITLB = 1;
+    localparam ENABLE_RTLB = 1;
+    localparam ENABLE_WTLB = 1;
+
     /***** Address translation ********************************************************************/
     reg  [31:0] physical_addr       = 0;
     reg         page_walk_fail      = 0;
@@ -191,17 +195,35 @@ module m_mmu (
     wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_addr = {w_ppn, w_insn_addr[31:12]};
     wire [TLB_ADDR_WIDTH-1:0] w_tlb_data_addr = {w_ppn, w_data_addr[31:12]};
 
-    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we,
-                                            w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata,
-                                            w_tlb_inst_r_addr, w_tlb_inst_r_oe);
+    generate
+        if (ENABLE_ITLB) begin
+            m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
+            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we, w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata, w_tlb_inst_r_addr, w_tlb_inst_r_oe);
+        end else begin
+            assign w_tlb_inst_r_addr = 0;
+            assign w_tlb_inst_r_oe = 0;
+        end
+    endgenerate
 
-    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we,
-                                            w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata,
-                                            w_tlb_data_r_addr, w_tlb_data_r_oe);
+    generate
+        if (ENABLE_RTLB) begin
+            m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
+            TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_r_we, w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata, w_tlb_data_r_addr, w_tlb_data_r_oe);
+        end else begin
+            assign w_tlb_data_r_addr = 0;
+            assign w_tlb_data_r_oe = 0;
+        end
+    endgenerate
 
-    m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY) TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we,
-                                            w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata,
-                                            w_tlb_data_w_addr, w_tlb_data_w_oe);
+    generate
+        if (ENABLE_WTLB) begin
+            m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
+            TLB_data_w (CLK, 1'b1, w_tlb_flush, w_tlb_data_w_we, w_tlb_data_addr, w_tlb_data_addr, w_tlb_wdata, w_tlb_data_w_addr, w_tlb_data_w_oe);
+        end else begin
+            assign w_tlb_data_w_addr = 0;
+            assign w_tlb_data_w_oe = 0;
+        end
+    endgenerate
 
     reg  [31:0] r_tlb_pte_addr = 0;
     reg         r_tlb_acs = 0;
