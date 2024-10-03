@@ -18,8 +18,8 @@ module m_RVCluster #(
     input  wire               w_mode_is_cpu,
     input  wire               w_next_mode_is_mc,
 
-    (* keep = "true" *)output wire [31:0]        w_cluster_iaddr,
-    (* keep = "true" *)output wire [31:0]        w_cluster_daddr,
+    output wire [31:0]        w_cluster_iaddr,
+    output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
     output wire               w_cluster_is_paddr,
