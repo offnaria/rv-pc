@@ -102,7 +102,7 @@ module m_mmu (
     reg   [2:0] r_tlb_usage  = 0;
     assign w_tlb_addr = r_tlb_addr;
     assign w_tlb_usage  = r_tlb_usage;
-    wire [21:0] w_tlb_inst_r_addr, w_tlb_data_r_addr, w_tlb_data_w_addr;
+    wire [21:0] w_tlb_inst_addr, w_tlb_data_r_addr, w_tlb_data_w_addr;
     wire        w_tlb_inst_r_oe, w_tlb_data_r_oe, w_tlb_data_w_oe;
     assign w_use_tlb = (w_mode_is_cpu && (w_iscode || w_isread || w_iswrite)
                                           && (!(w_priv == `PRIV_M || w_satp[31] == 0)));
@@ -125,7 +125,7 @@ module m_mmu (
                     r_pw_state <= 7;
                     r_tlb_busy <= 1;
                     case ({w_iscode, w_isread, w_iswrite})
-                        3'b100 : r_tlb_addr <= {w_tlb_inst_r_addr[21:2], w_insn_addr[11:0]};
+                        3'b100 : r_tlb_addr <= {w_tlb_inst_addr[21:2], w_insn_addr[11:0]};
                         3'b010 : r_tlb_addr <= {w_tlb_data_r_addr[21:2], w_data_addr[11:0]};
                         3'b001 : r_tlb_addr <= {w_tlb_data_w_addr[21:2], w_data_addr[11:0]};
                         default: r_tlb_addr <= 0;
@@ -199,9 +199,9 @@ module m_mmu (
     generate
         if (ENABLE_ITLB) begin
             m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata, w_tlb_inst_r_addr, w_tlb_inst_r_oe);
+            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata, w_tlb_inst_addr, w_tlb_inst_r_oe);
         end else begin
-            assign w_tlb_inst_r_addr = 0;
+            assign w_tlb_inst_addr = 0;
             assign w_tlb_inst_r_oe = 0;
         end
     endgenerate
