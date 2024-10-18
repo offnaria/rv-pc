@@ -67,7 +67,8 @@ module m_RVCorePL_SMP#(
     output wire [31:0]  w_mstatus,      // from register mstatus
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
-    output wire         w_tlb_flush     // from r_tlb_flush
+    output wire         w_tlb_flush,    // from r_tlb_flush
+    output wire         w_is_amo        // Indicates if the access is an atomic memory operation
 );
 
     localparam ENABLE_ICACHE=0;
@@ -1126,6 +1127,7 @@ module m_RVCorePL_SMP#(
 
     reg [3:0] mem_access_state = IDLE;
     reg [3:0] next_state;
+    assign w_is_amo = (mem_access_state == AMO_LOAD) || (mem_access_state == AMO_ALU) || (mem_access_state == AMO_STORE);
 
     always @ (*) begin
         data_wen = 0;

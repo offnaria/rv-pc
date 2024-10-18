@@ -12,6 +12,7 @@ module m_mmu (
     input wire [31:0] w_dram_odata,
     input wire        w_tlb_flush,
     input wire        w_mode_is_cpu,
+    input wire        w_is_amo,
 
     output wire        w_iscode,
     output wire        w_isread,
@@ -95,7 +96,7 @@ module m_mmu (
     assign w_pte_wdata          = (L1_xwr != 0 && L1_success) ? L1_pte_write : L0_pte_write;
 
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
-                                    (r_isread) ? `CAUSE_LOAD_PAGE_FAULT : `CAUSE_STORE_PAGE_FAULT;
+                                    (r_iswrite || w_is_amo) ? `CAUSE_STORE_PAGE_FAULT : `CAUSE_LOAD_PAGE_FAULT;
 
     reg  [31:0] r_tlb_addr = 0;
     reg   [2:0] r_tlb_usage  = 0;

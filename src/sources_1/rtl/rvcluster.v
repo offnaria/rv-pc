@@ -95,6 +95,7 @@ module m_RVCluster #(
     wire [N_HARTS-1:0] w_core_take_exception;
     wire [N_HARTS-1:0] w_core_tlb_flush;
     wire [N_HARTS-1:0] w_core_csr_flush;
+    wire [N_HARTS-1:0] w_core_is_amo;
 
     wire [31:0] w_core_local_iaddr  [0:N_HARTS-1];
     wire [31:0] w_core_local_daddr  [0:N_HARTS-1];
@@ -164,6 +165,7 @@ module m_RVCluster #(
         .w_dram_odata(w_dram_odata),
         .w_tlb_flush(w_flush_all_tlbs),
         .w_mode_is_cpu(w_mode_is_cpu),
+        .w_is_amo(w_core_is_amo[r_hart_sel]),
         .w_iscode(w_cluster_iscode),
         .w_isread(w_cluster_isread),
         .w_iswrite(w_cluster_iswrite),

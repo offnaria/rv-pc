@@ -27,7 +27,8 @@ module m_RVCorePL_wrapper #(
     output wire [31:0]  w_mstatus,
     output wire         w_init_stage,
     output wire  [1:0]  w_tlb_req,
-    output wire         w_tlb_flush
+    output wire         w_tlb_flush,
+    output wire         w_is_amo
 );
 
     wire [127:0] w_instance_insn_data;
@@ -54,6 +55,7 @@ module m_RVCorePL_wrapper #(
     wire         w_instance_init_stage;
     wire  [1:0]  w_instance_tlb_req;
     wire         w_instance_tlb_flush;
+    wire         w_instance_is_amo;
 
     generate
         if (CACHED) begin
@@ -83,6 +85,7 @@ module m_RVCorePL_wrapper #(
             assign w_init_stage = w_instance_init_stage;
             assign w_tlb_req = w_instance_tlb_req;
             assign w_tlb_flush = w_instance_tlb_flush;
+            assign w_is_amo = w_instance_is_amo;
         end
     endgenerate
 
@@ -113,7 +116,8 @@ module m_RVCorePL_wrapper #(
         .w_mstatus(w_instance_mstatus),
         .w_init_stage(w_instance_init_stage),
         .w_tlb_req(w_instance_tlb_req),
-        .w_tlb_flush(w_instance_tlb_flush)
+        .w_tlb_flush(w_instance_tlb_flush),
+        .w_is_amo(w_instance_is_amo)
     );
     
 endmodule
