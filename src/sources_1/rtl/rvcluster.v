@@ -139,7 +139,8 @@ module m_RVCluster #(
                 .w_mstatus(w_core_mstatus[g]),
                 .w_init_stage(w_core_init_stage[g]),
                 .w_tlb_req(w_core_tlb_req[g]),
-                .w_tlb_flush(w_core_tlb_flush[g])
+                .w_tlb_flush(w_core_tlb_flush[g]),
+                .w_is_amo(w_core_is_amo[g])
             );
 
             assign w_core_next_state_is_idle[g] = (core_wrapper.core_inst.next_state == 0);
