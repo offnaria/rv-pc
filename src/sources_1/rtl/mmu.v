@@ -33,7 +33,17 @@ module m_mmu (
     localparam VPN_WIDTH      = 20;
     localparam PPN_WIDTH      = 22;
     localparam TLB_ADDR_WIDTH = VPN_WIDTH + PPN_WIDTH;
-    localparam TLB_DATA_WIDTH = 22;
+    localparam TLB_PERMISSION_BITS_WIDTH = 8; // D, A, G, U, X, W, R, V
+    localparam TLB_PTE_V_BIT = 0;
+    localparam TLB_PTE_R_BIT = 1;
+    localparam TLB_PTE_W_BIT = 2;
+    localparam TLB_PTE_X_BIT = 3;
+    localparam TLB_PTE_U_BIT = 4;
+    localparam TLB_PTE_G_BIT = 5;
+    localparam TLB_PTE_A_BIT = 6;
+    localparam TLB_PTE_D_BIT = 7;
+    localparam TLB_INST_WIDTH = PPN_WIDTH;
+    localparam TLB_DATA_WIDTH = PPN_WIDTH + TLB_PERMISSION_BITS_WIDTH;
     localparam TLB_ENTRY      = `TLB_SIZE;
 
     localparam ENABLE_ITLB = 1;
@@ -53,6 +63,10 @@ module m_mmu (
     // Page table entry
     reg  [31:0] L1_pte              = 0;
     reg  [31:0] L0_pte              = 0;
+
+    // Permission
+    reg  [TLB_PERMISSION_BITS_WIDTH-1:0] r_permission = 0;
+    wire [TLB_PERMISSION_BITS_WIDTH-1:0] w_tlb_permission;
 
     /***********************************        Page walk       ***********************************/
     assign w_iscode        = (w_tlb_req == `ACCESS_CODE);
@@ -110,6 +124,7 @@ module m_mmu (
                             ((w_isread || w_iswrite) && w_tlb_data_hit));
     assign w_pw_done = (r_pw_state == 7);
 
+    wire [2:0] w_tlb_permission_xwr = w_mstatus[19] ? (w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | w_tlb_permission[TLB_PTE_G_BIT:TLB_PTE_X_BIT]) : w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     // PAGE WALK state
     always@(posedge CLK) begin
         if(r_pw_state == 0) begin
@@ -121,9 +136,16 @@ module m_mmu (
                     r_tlb_busy <= 1;
                 end
                 else begin
-                    r_pw_state <= 7;
+                    if (((w_priv == `PRIV_S) && (w_tlb_permission[TLB_PTE_U_BIT] && !w_mstatus[18])) ||
+                        ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) ||
+                        ((w_iswrite || w_is_amo) && !w_tlb_permission_xwr[1])) begin
+                        r_pw_state <= 5;
+                        page_walk_fail <= 1;
+                    end else begin
+                        r_pw_state <= 7;
+                    end
                     r_tlb_busy <= 1;
-                    r_tlb_addr <= (w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 0;
+                    r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
                     r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                 end
                 {r_iscode, r_isread, r_iswrite} <= {w_iscode, w_isread, w_iswrite};
@@ -153,6 +175,7 @@ module m_mmu (
                 physical_addr   <= (L1_success) ? L1_p_addr : 0;
                 page_walk_fail  <= (L1_success) ? 0 : 1;
                 r_tlb_busy      <= L1_success;
+                r_permission    <= (L1_success) ? L1_pte[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
             end
             else if(!L0_pte[0]) begin
                 physical_addr   <= 0;
@@ -163,6 +186,7 @@ module m_mmu (
                 physical_addr   <= (L0_success) ? L0_p_addr : 0;
                 page_walk_fail  <= (L0_success) ? 0 : 1;
                 r_tlb_busy      <= L0_success;
+                r_permission    <= (L0_success) ? L0_pte[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
             end
             r_pw_state  <= 5;
         end
@@ -171,6 +195,7 @@ module m_mmu (
             r_pw_state      <= 0;
             physical_addr   <= 0;
             page_walk_fail  <= 0;
+            r_permission    <= 0;
         end
         else if(r_pw_state == 7) begin
             r_pw_state <= 0;
@@ -182,8 +207,9 @@ module m_mmu (
 
     /***********************************           TLB          ***********************************/
     wire        w_tlb_inst_we   = (r_pw_state == 5 && !page_walk_fail && w_iscode);
-    wire        w_tlb_data_we   = (r_pw_state == 5 && !page_walk_fail && !w_iscode);
-    wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
+    wire        w_tlb_data_we   = (r_pw_state == 5 && !page_walk_fail && (w_isread || w_iswrite));
+    wire [TLB_INST_WIDTH-1:0] w_tlb_inst_wdata = {2'b0, physical_addr[31:12]};
+    wire [TLB_DATA_WIDTH-1:0] w_tlb_data_wdata = {2'b0, r_permission, physical_addr[31:12]};
 
     wire [PPN_WIDTH:0] w_ppn = w_satp[21:0];
     wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_rwaddr = {w_ppn, w_insn_addr[31:12]};
@@ -191,8 +217,8 @@ module m_mmu (
 
     generate
         if (ENABLE_ITLB) begin
-            m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            tlb_inst (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_rwaddr, w_tlb_inst_rwaddr, w_tlb_wdata, w_tlb_inst_addr, w_tlb_inst_hit);
+            m_cache_dmap#(TLB_ADDR_WIDTH, TLB_INST_WIDTH, TLB_ENTRY)
+            tlb_inst (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_rwaddr, w_tlb_inst_rwaddr, w_tlb_inst_wdata, w_tlb_inst_addr, w_tlb_inst_hit);
         end else begin
             assign w_tlb_inst_addr = 0;
             assign w_tlb_inst_hit = 0;
@@ -202,7 +228,7 @@ module m_mmu (
     generate
         if (ENABLE_RTLB) begin
             m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            tlb_data (CLK, 1'b1, w_tlb_flush, w_tlb_data_we, w_tlb_data_rwaddr, w_tlb_data_rwaddr, w_tlb_wdata, w_tlb_data_addr, w_tlb_data_hit);
+            tlb_data (CLK, 1'b1, w_tlb_flush, w_tlb_data_we, w_tlb_data_rwaddr, w_tlb_data_rwaddr, w_tlb_data_wdata, {w_tlb_permission, w_tlb_data_addr}, w_tlb_data_hit);
         end else begin
             assign w_tlb_data_addr = 0;
             assign w_tlb_data_hit = 0;
