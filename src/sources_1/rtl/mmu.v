@@ -192,7 +192,7 @@ module m_mmu (
     generate
         if (ENABLE_ITLB) begin
             m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_rwaddr, w_tlb_inst_rwaddr, w_tlb_wdata, w_tlb_inst_addr, w_tlb_inst_hit);
+            tlb_inst (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_rwaddr, w_tlb_inst_rwaddr, w_tlb_wdata, w_tlb_inst_addr, w_tlb_inst_hit);
         end else begin
             assign w_tlb_inst_addr = 0;
             assign w_tlb_inst_hit = 0;
@@ -202,7 +202,7 @@ module m_mmu (
     generate
         if (ENABLE_RTLB) begin
             m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            TLB_data_r (CLK, 1'b1, w_tlb_flush, w_tlb_data_we, w_tlb_data_rwaddr, w_tlb_data_rwaddr, w_tlb_wdata, w_tlb_data_addr, w_tlb_data_hit);
+            tlb_data (CLK, 1'b1, w_tlb_flush, w_tlb_data_we, w_tlb_data_rwaddr, w_tlb_data_rwaddr, w_tlb_wdata, w_tlb_data_addr, w_tlb_data_hit);
         end else begin
             assign w_tlb_data_addr = 0;
             assign w_tlb_data_hit = 0;
