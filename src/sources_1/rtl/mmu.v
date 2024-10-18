@@ -209,7 +209,7 @@ module m_mmu (
     wire        w_tlb_inst_we   = (r_pw_state == 5 && !page_walk_fail && w_iscode);
     wire        w_tlb_data_we   = (r_pw_state == 5 && !page_walk_fail && (w_isread || w_iswrite));
     wire [TLB_INST_WIDTH-1:0] w_tlb_inst_wdata = {2'b0, physical_addr[31:12]};
-    wire [TLB_DATA_WIDTH-1:0] w_tlb_data_wdata = {2'b0, r_permission, physical_addr[31:12]};
+    wire [TLB_DATA_WIDTH-1:0] w_tlb_data_wdata = {r_permission, 2'b0, physical_addr[31:12]};
 
     wire [PPN_WIDTH:0] w_ppn = w_satp[21:0];
     wire [TLB_ADDR_WIDTH-1:0] w_tlb_inst_rwaddr = {w_ppn, w_insn_addr[31:12]};
