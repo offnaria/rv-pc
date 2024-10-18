@@ -17,7 +17,6 @@ module m_RVCorePL_wrapper #(
     input  wire [63:0]  w_mtime,
     input  wire         w_cache_invalidate,
     input  wire [31:0]  w_cache_invalidate_address,
-    input  wire         w_flush_all_tlbs,
 
     output wire [31:0]  w_data_wdata,
     output wire [31:0]  w_insn_addr,
@@ -44,7 +43,6 @@ module m_RVCorePL_wrapper #(
     wire [63:0]  w_instance_mtime;
     wire         w_instance_cache_invalidate;
     wire [31:0]  w_instance_cache_invalidate_address;
-    wire         w_instance_flush_all_tlbs;
 
     wire [31:0]  w_instance_data_wdata;
     wire [31:0]  w_instance_insn_addr;
@@ -74,7 +72,6 @@ module m_RVCorePL_wrapper #(
             assign w_instance_mtime = w_mtime;
             assign w_instance_cache_invalidate = w_cache_invalidate;
             assign w_instance_cache_invalidate_address = w_cache_invalidate_address;
-            assign w_instance_flush_all_tlbs = w_flush_all_tlbs;
 
             assign w_data_wdata = w_instance_data_wdata;
             assign w_insn_addr = w_instance_insn_addr;
@@ -107,7 +104,6 @@ module m_RVCorePL_wrapper #(
         .w_mtime(w_instance_mtime),
         .w_cache_invalidate(w_instance_cache_invalidate),
         .w_cache_invalidate_address(w_instance_cache_invalidate_address),
-        .w_flush_all_tlbs(w_instance_flush_all_tlbs),
         .w_data_wdata(w_instance_data_wdata),
         .w_insn_addr(w_instance_insn_addr),
         .w_data_ctrl(w_instance_data_ctrl),

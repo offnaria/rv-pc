@@ -57,7 +57,6 @@ module m_RVCorePL_SMP#(
     input  wire [63:0]  w_mtime,        // Timer from CLINT
     input  wire         w_cache_invalidate,
     input  wire [31:0]  w_cache_invalidate_address,
-    input  wire         w_flush_all_tlbs,
 
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
@@ -261,7 +260,7 @@ module m_RVCorePL_SMP#(
     reg  fetch_from_cache;
     wire [127:0] w_inst_cache_odata;
     wire w_inst_cache_hit;
-    wire w_inst_cache_flush = tlb_flush || w_mc_mode == `MC_MODE_DISK || IdEx_op_FENCEI || w_flush_all_tlbs;
+    wire w_inst_cache_flush = tlb_flush || w_mc_mode == `MC_MODE_DISK || IdEx_op_FENCEI;
     wire [127:0] w_instruction128;
     wire [6:0] w_inst_offset = {pc[3:2], 5'b0};
 
