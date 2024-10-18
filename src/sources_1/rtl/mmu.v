@@ -187,7 +187,7 @@ module m_mmu (
     end
 
     /***********************************           TLB          ***********************************/
-    wire        w_tlb_inst_r_we   = (r_pw_state == 5 && !page_walk_fail && w_iscode);
+    wire        w_tlb_inst_we   = (r_pw_state == 5 && !page_walk_fail && w_iscode);
     wire        w_tlb_data_r_we   = (r_pw_state == 5 && !page_walk_fail && w_isread);
     wire        w_tlb_data_w_we   = (r_pw_state == 5 && !page_walk_fail && w_iswrite);
     wire [21:0] w_tlb_wdata       = {physical_addr[31:12], 2'b0};
@@ -199,7 +199,7 @@ module m_mmu (
     generate
         if (ENABLE_ITLB) begin
             m_cache_dmap#(TLB_ADDR_WIDTH, TLB_DATA_WIDTH, TLB_ENTRY)
-            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_r_we, w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata, w_tlb_inst_r_addr, w_tlb_inst_r_oe);
+            TLB_inst_r (CLK, 1'b1, w_tlb_flush, w_tlb_inst_we, w_tlb_inst_addr, w_tlb_inst_addr, w_tlb_wdata, w_tlb_inst_r_addr, w_tlb_inst_r_oe);
         end else begin
             assign w_tlb_inst_r_addr = 0;
             assign w_tlb_inst_r_oe = 0;
