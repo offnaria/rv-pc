@@ -142,6 +142,7 @@ module m_mmu (
                 // tlb miss
                 if(!w_tlb_hit) begin
                     r_pw_state <= 1;
+                    r_tlb_busy <= 1;
                 end
                 else begin
                     if (w_tlb_permission_miss) begin
@@ -149,13 +150,14 @@ module m_mmu (
                         page_walk_fail <= 1;
                     end else if (w_tlb_dirty_miss) begin
                         r_pw_state <= 1;
+                        r_tlb_busy <= 1;
                     end else begin
                         r_pw_state <= 7;
+                        r_tlb_busy <= 1;
                         r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
                         r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                     end
                 end
-                r_tlb_busy <= 1;
                 {r_iscode, r_isread, r_iswrite, r_is_amo_load} <= {w_iscode, w_isread, w_iswrite, w_is_amo_load};
             end
         end
