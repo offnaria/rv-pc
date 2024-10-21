@@ -91,7 +91,9 @@ module m_mmu (
     wire        L1_success      = !(L1_xwr ==2 || L1_xwr == 6 || !L1_pte[0] ||
                                    (L1_xwr != 0 && ((w_priv == `PRIV_S && (L1_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                                     (w_priv == `PRIV_U && !L1_pte[TLB_PTE_U_BIT]) ||
-                                                    (L1_xwr[w_tlb_req] == 0))));
+                                                    (w_iscode && !L1_pte[TLB_PTE_X_BIT]) ||
+                                                    ((w_iswrite || w_is_amo) && !L1_pte[TLB_PTE_W_BIT]) ||
+                                                    (w_isread && !L1_xwr[0]))));
 
     // Level 0
     wire [31:0] vpn0            = {22'b0, v_addr[21:12]};
@@ -103,7 +105,9 @@ module m_mmu (
     wire        L0_success      = !(L0_xwr ==2 || L0_xwr == 6 || !L0_pte[0] || !L1_success ||
                                     (w_priv == `PRIV_S && (L0_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                     (w_priv == `PRIV_U && !L0_pte[TLB_PTE_U_BIT]) ||
-                                    (L0_xwr[w_tlb_req] == 0));
+                                    (w_iscode && !L0_pte[TLB_PTE_X_BIT]) ||
+                                    ((w_iswrite || w_is_amo) && !L0_pte[TLB_PTE_W_BIT]) ||
+                                    (w_isread && !L0_xwr[0]));
 
     // update pte
     wire [31:0] L1_pte_write    = L1_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo) ? `PTE_D_MASK : 0);
