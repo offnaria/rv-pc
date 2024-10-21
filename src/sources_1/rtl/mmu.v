@@ -92,9 +92,7 @@ module m_mmu (
     wire        L1_success      = !(L1_xwr ==2 || L1_xwr == 6 || !L1_pte[0] ||
                                    (L1_xwr != 0 && ((w_priv == `PRIV_S && (L1_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                                     (w_priv == `PRIV_U && !L1_pte[TLB_PTE_U_BIT]) ||
-                                                    (w_iscode && !L1_pte[TLB_PTE_X_BIT]) ||
-                                                    ((w_iswrite || w_is_amo_load) && !L1_pte[TLB_PTE_W_BIT]) ||
-                                                    ((w_isread && !w_is_amo_load) && !L1_xwr[0]))));
+                                                    (L1_xwr[w_tlb_req] == 0))));
 
     // Level 0
     wire [31:0] vpn0            = {22'b0, v_addr[21:12]};
@@ -106,9 +104,7 @@ module m_mmu (
     wire        L0_success      = !(L0_xwr ==2 || L0_xwr == 6 || !L0_pte[0] || !L1_success ||
                                     (w_priv == `PRIV_S && (L0_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                     (w_priv == `PRIV_U && !L0_pte[TLB_PTE_U_BIT]) ||
-                                    (w_iscode && !L0_pte[TLB_PTE_X_BIT]) ||
-                                    ((w_iswrite || w_is_amo_load) && !L0_pte[TLB_PTE_W_BIT]) ||
-                                    ((w_isread && !w_is_amo_load) && !L0_xwr[0]));
+                                    (L0_xwr[w_tlb_req] == 0));
 
     // update pte
     wire [31:0] L1_pte_write    = L1_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo_load) ? `PTE_D_MASK : 0);
@@ -136,8 +132,7 @@ module m_mmu (
     wire [2:0] w_tlb_permission_xwr = w_mstatus[MSTATUS_MXR_BIT] ? (w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, w_tlb_permission[TLB_PTE_X_BIT]}) : w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     wire w_tlb_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
                     ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
-                    ((w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_W_BIT]) || // Write access is not allowed.
-                    ((w_isread && !w_is_amo_load) && !w_tlb_permission_xwr[0]); // Read access is not allowed.
+                    (w_tlb_permission_xwr[w_tlb_req] == 0); // Permission check.
     wire w_tlb_dirty_miss = (w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
     // PAGE WALK state
     always@(posedge CLK) begin
