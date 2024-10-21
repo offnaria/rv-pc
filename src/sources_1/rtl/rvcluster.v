@@ -184,20 +184,25 @@ module m_RVCluster #(
         .w_pw_done(w_cluster_pw_done)
     );
 `ifdef SYNTHESIS
-    ila_mmu_permission your_instance_name (
-        .clk(CLK), // input wire clk
-        .probe0(w_core_priv[r_hart_sel]), // input wire [0:0]  probe0  
-        .probe1(w_core_priv[r_hart_sel]), // input wire [31:0]  probe1 
-        .probe2(mmu.w_tlb_permission), // input wire [7:0]  probe2 
-        .probe3(w_core_mstatus[r_hart_sel]), // input wire [31:0]  probe3 
-        .probe4(mmu.w_tlb_hit), // input wire [0:0]  probe4 
-        .probe5(w_cluster_pw_state), // input wire [2:0]  probe5 
-        .probe6(w_cluster_tlb_usage), // input wire [3:0]  probe6 
-        .probe7(w_core_local_iaddr[0]), // input wire [31:0]  probe7
-        .probe8(mmu.w_tlb_permission_miss), // input wire [0:0]  probe8
-        .probe9(w_core_local_iaddr[1]),
-        .probe10(r_hart_sel)
-    );
+generate
+    if (DEBUG) begin
+        ila_mmu_permission ila_mmu_permission (
+            .clk(CLK), // input wire clk
+            .probe0(w_core_priv[r_hart_sel]), // input wire [0:0]  probe0  
+            .probe1(w_core_priv[r_hart_sel]), // input wire [31:0]  probe1 
+            .probe2(mmu.w_tlb_permission), // input wire [7:0]  probe2 
+            .probe3(w_core_mstatus[r_hart_sel]), // input wire [31:0]  probe3 
+            .probe4(mmu.w_tlb_hit), // input wire [0:0]  probe4 
+            .probe5(w_cluster_pw_state), // input wire [2:0]  probe5 
+            .probe6(w_cluster_tlb_usage), // input wire [3:0]  probe6 
+            .probe7(w_core_local_iaddr[0]), // input wire [31:0]  probe7
+            .probe8(mmu.w_tlb_permission_miss), // input wire [0:0]  probe8
+            .probe9(w_core_local_iaddr[1]),
+            .probe10(r_hart_sel),
+            .probe11(mmu.w_tlb_dirty_miss)
+        );
+    end
+endgenerate
 `endif
 
     /****************************** Cluster Arbiter ******************************/
