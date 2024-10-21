@@ -132,8 +132,8 @@ module m_mmu (
     wire w_tlb_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
                     ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
                     ((w_iswrite || w_is_amo) && !w_tlb_permission[TLB_PTE_W_BIT]) || // Write access is not allowed.
-                    (w_isread && !w_tlb_permission_xwr[0]) || // Read access is not allowed.
-                    ((w_iswrite || w_is_amo) && !w_tlb_permission[TLB_PTE_D_BIT]); // Dirty bit is not set.
+                    (w_isread && !w_tlb_permission_xwr[0]); // Read access is not allowed.
+    wire w_tlb_dirty_miss = (w_iswrite || w_is_amo) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
     // PAGE WALK state
     always@(posedge CLK) begin
         if(r_pw_state == 0) begin
@@ -148,6 +148,8 @@ module m_mmu (
                     if (w_tlb_permission_miss) begin
                         r_pw_state <= 6;
                         page_walk_fail <= 1;
+                    end else if (w_tlb_dirty_miss) begin
+                        r_pw_state <= 1;
                     end else begin
                         r_pw_state <= 7;
                     end
@@ -182,7 +184,7 @@ module m_mmu (
                 physical_addr   <= (L1_success) ? L1_p_addr : 0;
                 page_walk_fail  <= (L1_success) ? 0 : 1;
                 r_tlb_busy      <= L1_success;
-                r_permission    <= (L1_success) ? L1_pte[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
+                r_permission    <= (L1_success) ? L1_pte_write[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
             end
             else if(!L0_pte[0]) begin
                 physical_addr   <= 0;
@@ -193,7 +195,7 @@ module m_mmu (
                 physical_addr   <= (L0_success) ? L0_p_addr : 0;
                 page_walk_fail  <= (L0_success) ? 0 : 1;
                 r_tlb_busy      <= L0_success;
-                r_permission    <= (L0_success) ? L0_pte[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
+                r_permission    <= (L0_success) ? L0_pte_write[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
             end
             r_pw_state  <= 5;
         end
