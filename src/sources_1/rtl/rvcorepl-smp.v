@@ -68,7 +68,7 @@ module m_RVCorePL_SMP#(
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
     output wire         w_tlb_flush,    // from r_tlb_flush
-    output wire         w_is_amo        // Indicates if the access is an atomic memory operation
+    output wire         w_is_amo_load        // Indicates if the access is an atomic memory operation
 );
 
     localparam ENABLE_ICACHE=0;
@@ -1127,12 +1127,14 @@ module m_RVCorePL_SMP#(
 
     reg [3:0] mem_access_state = IDLE;
     reg [3:0] next_state;
-    assign w_is_amo = (mem_access_state == AMO_LOAD) || (mem_access_state == AMO_ALU) || (mem_access_state == AMO_STORE);
+    reg w_is_amo_load_tmp;
+    assign w_is_amo_load = w_is_amo_load_tmp;
 
     always @ (*) begin
         data_wen = 0;
         data_ren = 0;
         inst_ren = 0;
+        w_is_amo_load_tmp = 0;
         inst_cache_we = 0;
         fetch_from_cache = 1;
         data_cache_we = 0;
@@ -1162,6 +1164,7 @@ module m_RVCorePL_SMP#(
                         if (ExMem_op_AMO) begin
                             data_ren = 1;
                             next_state = AMO_LOAD;
+                            w_is_amo_load_tmp = 1;
                         end else if (ExMem_op_STORE | (ExMem_op_SC & w_sc_success)) begin
                             data_wen = 1;
                             next_state = STORE;
@@ -1204,6 +1207,7 @@ module m_RVCorePL_SMP#(
                             data_ren = 1;
                             if (ExMem_op_AMO) begin
                                 next_state = AMO_LOAD;
+                                w_is_amo_load_tmp = 1;
                             end else begin
                                 next_state = LOAD;
                             end
@@ -1271,6 +1275,7 @@ module m_RVCorePL_SMP#(
                         hazard_data_load = 1;
                     end else begin
                         data_ren = 1;
+                        w_is_amo_load_tmp = 1;
                     end
                 end
                 AMO_ALU: begin

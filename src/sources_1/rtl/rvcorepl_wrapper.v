@@ -28,7 +28,7 @@ module m_RVCorePL_wrapper #(
     output wire         w_init_stage,
     output wire  [1:0]  w_tlb_req,
     output wire         w_tlb_flush,
-    output wire         w_is_amo
+    output wire         w_is_amo_load
 );
 
     wire [127:0] w_instance_insn_data;
@@ -85,7 +85,7 @@ module m_RVCorePL_wrapper #(
             assign w_init_stage = w_instance_init_stage;
             assign w_tlb_req = w_instance_tlb_req;
             assign w_tlb_flush = w_instance_tlb_flush;
-            assign w_is_amo = w_instance_is_amo;
+            assign w_is_amo_load = w_instance_is_amo;
         end
     endgenerate
 
@@ -117,7 +117,7 @@ module m_RVCorePL_wrapper #(
         .w_init_stage(w_instance_init_stage),
         .w_tlb_req(w_instance_tlb_req),
         .w_tlb_flush(w_instance_tlb_flush),
-        .w_is_amo(w_instance_is_amo)
+        .w_is_amo_load(w_instance_is_amo)
     );
     
 endmodule

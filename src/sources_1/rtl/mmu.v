@@ -12,7 +12,7 @@ module m_mmu (
     input wire [31:0] w_dram_odata,
     input wire        w_tlb_flush,
     input wire        w_mode_is_cpu,
-    input wire        w_is_amo,
+    input wire        w_is_amo_load,
 
     output wire        w_iscode,
     output wire        w_isread,
@@ -79,6 +79,7 @@ module m_mmu (
     reg         r_iscode        = 0;
     reg         r_isread        = 0;
     reg         r_iswrite       = 0;
+    reg         r_is_amo_load   = 0;
     wire [31:0] v_addr          = w_iscode ? w_insn_addr : w_data_addr;
 
     // Level 1
@@ -87,13 +88,13 @@ module m_mmu (
     wire  [2:0] L1_xwr          = w_mstatus[MSTATUS_MXR_BIT] ? (L1_pte[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, L1_pte[TLB_PTE_X_BIT]}) : L1_pte[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     wire [31:0] L1_paddr        = {L1_pte[29:10], 12'h0};
     wire [31:0] L1_p_addr       = {L1_paddr[31:22], v_addr[21:0]};
-    wire        L1_write        = !L1_pte[TLB_PTE_A_BIT] || (!L1_pte[TLB_PTE_D_BIT] && (w_iswrite || w_is_amo));
+    wire        L1_write        = !L1_pte[TLB_PTE_A_BIT] || (!L1_pte[TLB_PTE_D_BIT] && (w_iswrite || w_is_amo_load));
     wire        L1_success      = !(L1_xwr ==2 || L1_xwr == 6 || !L1_pte[0] ||
                                    (L1_xwr != 0 && ((w_priv == `PRIV_S && (L1_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                                     (w_priv == `PRIV_U && !L1_pte[TLB_PTE_U_BIT]) ||
                                                     (w_iscode && !L1_pte[TLB_PTE_X_BIT]) ||
-                                                    ((w_iswrite || w_is_amo) && !L1_pte[TLB_PTE_W_BIT]) ||
-                                                    (w_isread && !L1_xwr[0]))));
+                                                    ((w_iswrite || w_is_amo_load) && !L1_pte[TLB_PTE_W_BIT]) ||
+                                                    ((w_isread && !w_is_amo_load) && !L1_xwr[0]))));
 
     // Level 0
     wire [31:0] vpn0            = {22'b0, v_addr[21:12]};
@@ -101,24 +102,24 @@ module m_mmu (
     wire  [2:0] L0_xwr          = w_mstatus[MSTATUS_MXR_BIT] ? (L0_pte[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, L0_pte[TLB_PTE_X_BIT]}) : L0_pte[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     wire [31:0] L0_paddr        = {L0_pte[29:10], 12'h0};
     wire [31:0] L0_p_addr       = {L0_paddr[31:12], v_addr[11:0]};
-    wire        L0_write        = !L0_pte[TLB_PTE_A_BIT] || (!L0_pte[TLB_PTE_D_BIT] && (w_iswrite || w_is_amo));
+    wire        L0_write        = !L0_pte[TLB_PTE_A_BIT] || (!L0_pte[TLB_PTE_D_BIT] && (w_iswrite || w_is_amo_load));
     wire        L0_success      = !(L0_xwr ==2 || L0_xwr == 6 || !L0_pte[0] || !L1_success ||
                                     (w_priv == `PRIV_S && (L0_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                     (w_priv == `PRIV_U && !L0_pte[TLB_PTE_U_BIT]) ||
                                     (w_iscode && !L0_pte[TLB_PTE_X_BIT]) ||
-                                    ((w_iswrite || w_is_amo) && !L0_pte[TLB_PTE_W_BIT]) ||
-                                    (w_isread && !L0_xwr[0]));
+                                    ((w_iswrite || w_is_amo_load) && !L0_pte[TLB_PTE_W_BIT]) ||
+                                    ((w_isread && !w_is_amo_load) && !L0_xwr[0]));
 
     // update pte
-    wire [31:0] L1_pte_write    = L1_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo) ? `PTE_D_MASK : 0);
-    wire [31:0] L0_pte_write    = L0_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo) ? `PTE_D_MASK : 0);
+    wire [31:0] L1_pte_write    = L1_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo_load) ? `PTE_D_MASK : 0);
+    wire [31:0] L0_pte_write    = L0_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo_load) ? `PTE_D_MASK : 0);
     assign w_pte_we             = (r_pw_state==5) && (((L1_xwr != 0 && L1_success) && L1_write) ||
                                         ((L0_xwr != 0 && L0_success) && L0_write));
     wire [31:0] w_pte_waddr     = (L1_xwr != 0 && L1_success) ? L1_pte_addr : L0_pte_addr;
     assign w_pte_wdata          = (L1_xwr != 0 && L1_success) ? L1_pte_write : L0_pte_write;
 
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
-                                    (r_iswrite || w_is_amo) ? `CAUSE_STORE_PAGE_FAULT : `CAUSE_LOAD_PAGE_FAULT;
+                                    (r_iswrite || r_is_amo_load) ? `CAUSE_STORE_PAGE_FAULT : `CAUSE_LOAD_PAGE_FAULT;
 
     reg  [31:0] r_tlb_addr = 0;
     reg   [2:0] r_tlb_usage  = 0;
@@ -135,9 +136,9 @@ module m_mmu (
     wire [2:0] w_tlb_permission_xwr = w_mstatus[MSTATUS_MXR_BIT] ? (w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, w_tlb_permission[TLB_PTE_X_BIT]}) : w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     wire w_tlb_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
                     ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
-                    ((w_iswrite || w_is_amo) && !w_tlb_permission[TLB_PTE_W_BIT]) || // Write access is not allowed.
-                    (w_isread && !w_tlb_permission_xwr[0]); // Read access is not allowed.
-    wire w_tlb_dirty_miss = (w_iswrite || w_is_amo) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
+                    ((w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_W_BIT]) || // Write access is not allowed.
+                    ((w_isread && !w_is_amo_load) && !w_tlb_permission_xwr[0]); // Read access is not allowed.
+    wire w_tlb_dirty_miss = (w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
     // PAGE WALK state
     always@(posedge CLK) begin
         if(r_pw_state == 0) begin
@@ -146,7 +147,6 @@ module m_mmu (
                 // tlb miss
                 if(!w_tlb_hit) begin
                     r_pw_state <= 1;
-                    r_tlb_busy <= 1;
                 end
                 else begin
                     if (w_tlb_permission_miss) begin
@@ -156,12 +156,12 @@ module m_mmu (
                         r_pw_state <= 1;
                     end else begin
                         r_pw_state <= 7;
+                        r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
+                        r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                     end
-                    r_tlb_busy <= 1;
-                    r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
-                    r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                 end
-                {r_iscode, r_isread, r_iswrite} <= {w_iscode, w_isread, w_iswrite};
+                r_tlb_busy <= 1;
+                {r_iscode, r_isread, r_iswrite, r_is_amo_load} <= {w_iscode, w_isread, w_iswrite, w_is_amo_load};
             end
         end
         // Level 1

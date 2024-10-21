@@ -95,7 +95,7 @@ module m_RVCluster #(
     wire [N_HARTS-1:0] w_core_take_exception;
     wire [N_HARTS-1:0] w_core_tlb_flush;
     wire [N_HARTS-1:0] w_core_csr_flush;
-    wire [N_HARTS-1:0] w_core_is_amo;
+    wire [N_HARTS-1:0] w_core_is_amo_load;
 
     wire [31:0] w_core_local_iaddr  [0:N_HARTS-1];
     wire [31:0] w_core_local_daddr  [0:N_HARTS-1];
@@ -140,7 +140,7 @@ module m_RVCluster #(
                 .w_init_stage(w_core_init_stage[g]),
                 .w_tlb_req(w_core_tlb_req[g]),
                 .w_tlb_flush(w_core_tlb_flush[g]),
-                .w_is_amo(w_core_is_amo[g])
+                .w_is_amo_load(w_core_is_amo_load[g])
             );
 
             assign w_core_next_state_is_idle[g] = (core_wrapper.core_inst.next_state == 0);
@@ -166,7 +166,7 @@ module m_RVCluster #(
         .w_dram_odata(w_dram_odata),
         .w_tlb_flush(w_flush_all_tlbs),
         .w_mode_is_cpu(w_mode_is_cpu),
-        .w_is_amo(w_core_is_amo[r_hart_sel]),
+        .w_is_amo_load(w_core_is_amo_load[r_hart_sel]),
         .w_iscode(w_cluster_iscode),
         .w_isread(w_cluster_isread),
         .w_iswrite(w_cluster_iswrite),
@@ -183,6 +183,22 @@ module m_RVCluster #(
         .w_tlb_acs(w_cluster_tlb_acs),
         .w_pw_done(w_cluster_pw_done)
     );
+`ifdef SYNTHESIS
+    ila_mmu_permission your_instance_name (
+        .clk(CLK), // input wire clk
+        .probe0(w_core_priv[r_hart_sel]), // input wire [0:0]  probe0  
+        .probe1(w_core_priv[r_hart_sel]), // input wire [31:0]  probe1 
+        .probe2(mmu.w_tlb_permission), // input wire [7:0]  probe2 
+        .probe3(w_core_mstatus[r_hart_sel]), // input wire [31:0]  probe3 
+        .probe4(mmu.w_tlb_hit), // input wire [0:0]  probe4 
+        .probe5(w_cluster_pw_state), // input wire [2:0]  probe5 
+        .probe6(w_cluster_tlb_usage), // input wire [3:0]  probe6 
+        .probe7(w_core_local_iaddr[0]), // input wire [31:0]  probe7
+        .probe8(mmu.w_tlb_permission_miss), // input wire [0:0]  probe8
+        .probe9(w_core_local_iaddr[1]),
+        .probe10(r_hart_sel)
+    );
+`endif
 
     /****************************** Cluster Arbiter ******************************/
     reg [$clog2(N_HARTS+1)-1:0] r_hart_sel;
