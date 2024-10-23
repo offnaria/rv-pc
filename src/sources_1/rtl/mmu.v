@@ -92,7 +92,8 @@ module m_mmu (
     wire        L1_success      = !(L1_xwr ==2 || L1_xwr == 6 || !L1_pte[0] ||
                                    (L1_xwr != 0 && ((w_priv == `PRIV_S && (L1_pte[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) ||
                                                     (w_priv == `PRIV_U && !L1_pte[TLB_PTE_U_BIT]) ||
-                                                    (L1_xwr[w_tlb_req] == 0))));
+                                                    (L1_xwr[w_tlb_req] == 0) ||
+                                                    (L1_pte[19:10] != 0))));
 
     // Level 0
     wire [31:0] vpn0            = {22'b0, v_addr[21:12]};
@@ -133,6 +134,7 @@ module m_mmu (
                     ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
                     (w_tlb_permission_xwr[w_tlb_req] == 0); // Permission check.
     wire w_tlb_dirty_miss = (w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
+    reg r_pte_loaded = 0;
     // PAGE WALK state
     always@(posedge CLK) begin
         if(r_pw_state == 0) begin
@@ -159,8 +161,26 @@ module m_mmu (
         end
         // Level 1
         else if(r_pw_state == 1 && !w_dram_busy) begin
-            L1_pte      <= w_dram_odata;
-            r_pw_state  <= 2;
+            if (r_pte_loaded) begin
+                if(!L1_pte[0]) begin // Invalid PTE
+                    physical_addr   <= 0;
+                    page_walk_fail  <= 1;
+                    r_tlb_busy      <= 0;
+                    r_pw_state      <= 5; // Page fault
+                end else if(L1_xwr) begin // Leaf PTE
+                    physical_addr   <= (L1_success) ? L1_p_addr : 0;
+                    page_walk_fail  <= (L1_success) ? 0 : 1;
+                    r_tlb_busy      <= L1_success;
+                    r_permission    <= (L1_success) ? L1_pte_write[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
+                    r_pw_state      <= 5; // Update PTE or page fault
+                end else begin // V=1, {X,W,R}=0: Continue page walk
+                    r_pw_state      <= 2;
+                end
+                r_pte_loaded <= 0;
+            end else begin
+                r_pte_loaded <= 1;
+            end
+            L1_pte <= w_dram_odata;
         end
         else if(r_pw_state == 2) begin
             r_pw_state  <= 3;
@@ -172,18 +192,7 @@ module m_mmu (
         end
         // Success?
         else if(r_pw_state == 4) begin
-            if(!L1_pte[0]) begin
-                physical_addr   <= 0;
-                page_walk_fail  <= 1;
-                r_tlb_busy      <= 0;
-            end
-            else if(L1_xwr) begin
-                physical_addr   <= (L1_success) ? L1_p_addr : 0;
-                page_walk_fail  <= (L1_success) ? 0 : 1;
-                r_tlb_busy      <= L1_success;
-                r_permission    <= (L1_success) ? L1_pte_write[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
-            end
-            else if(!L0_pte[0]) begin
+            if(!L0_pte[0]) begin
                 physical_addr   <= 0;
                 page_walk_fail  <= 1;
                 r_tlb_busy      <= 0;
@@ -193,6 +202,10 @@ module m_mmu (
                 page_walk_fail  <= (L0_success) ? 0 : 1;
                 r_tlb_busy      <= L0_success;
                 r_permission    <= (L0_success) ? L0_pte_write[TLB_PERMISSION_BITS_WIDTH-1:0] : 0;
+            end else begin // V=1, {X,W,R}=0: Raise page fault
+                physical_addr   <= 0;
+                page_walk_fail  <= 1;
+                r_tlb_busy      <= 0;
             end
             r_pw_state  <= 5;
         end
