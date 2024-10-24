@@ -296,10 +296,6 @@ module m_main(
         .w_is_dram_data (w_is_dram_data),
         .r_finish       (w_finish),
         .w_mtime        (w_mtime),
-        // MMU
-        .w_pte_wdata    (w_cluster_pte_wdata),
-        .w_pw_state     (w_cluster_pw_state),
-        // MMU end
         .w_interconnect_busy(w_interconnect_busy),
         .w_txd          (w_txd),
         .w_rxd          (w_rxd),
@@ -362,8 +358,6 @@ module m_main(
 
     wire [31:0] w_cluster_iaddr;
     wire [31:0] w_cluster_daddr;
-    wire [31:0] w_cluster_pte_wdata;
-    wire [2:0]  w_cluster_pw_state;
 
     m_RVCluster #(
         .N_HARTS(N_HARTS)
@@ -388,8 +382,6 @@ module m_main(
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
-        .w_cluster_pte_wdata(w_cluster_pte_wdata),
-        .w_cluster_pw_state(w_cluster_pw_state),
         .w_cluster_data_we  (w_cluster_data_we),
         .w_cluster_dev_addr (w_cluster_dev_addr),
         .w_cluster_dram_addr(w_cluster_dram_addr),

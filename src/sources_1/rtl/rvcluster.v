@@ -22,8 +22,6 @@ module m_RVCluster #(
     output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
-    output wire [31:0]        w_cluster_pte_wdata,
-    output wire [2:0]         w_cluster_pw_state,
     output wire               w_cluster_data_we,
     output wire [31:0]        w_cluster_dev_addr,
     output wire [31:0]        w_cluster_dram_addr,
@@ -47,6 +45,8 @@ module m_RVCluster #(
     wire [31:0] w_cluster_tlb_pte_addr;
     wire w_cluster_tlb_acs;
     wire w_cluster_pte_we;
+    wire [31:0] w_cluster_pte_wdata;
+    wire w_cluster_pw_state;
 
     assign w_cluster_data_we   = (w_cluster_pw_running) ? w_cluster_pte_we : w_cluster_iswrite;
     assign w_cluster_dev_addr  = w_cluster_daddr;
@@ -219,7 +219,7 @@ endgenerate
 
     assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
     assign w_cluster_daddr = w_core_daddr[r_hart_sel];
-    assign w_cluster_data_wdata = w_core_data_wdata[r_hart_sel];
+    assign w_cluster_data_wdata = (w_cluster_pw_running) ? w_cluster_pte_wdata : w_core_data_wdata[r_hart_sel];
     assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
     // assign w_cluster_data_we = w_core_data_we[r_hart_sel]; // TODO: Assign this
     assign w_cluster_is_paddr = w_core_is_paddr[r_hart_sel];

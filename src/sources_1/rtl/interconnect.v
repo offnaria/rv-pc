@@ -23,10 +23,6 @@ module m_interconnect #(
     output wire         w_is_dram_data,
     output reg          r_finish,
     input  wire [63:0]  w_mtime,
-    // MMU
-    input  wire [31:0]  w_pte_wdata,
-    input  wire [2:0]   w_pw_state,
-    // MMU end
     output wire         w_interconnect_busy,
     output wire         w_txd,
     input  wire         w_rxd,
@@ -152,7 +148,7 @@ module m_interconnect #(
     wire  [3:0] w_virt      = w_dev_paddr[27:24];
     assign w_offset         = w_dev_paddr & 28'h7ffffff;
 
-    wire [31:0] w_dram_wdata    = (w_pw_state == 5) ? w_pte_wdata : w_mem_wdata;
+    wire [31:0] w_dram_wdata    = w_mem_wdata;
     wire        w_dram_we       = (w_mem_we && (w_dev == `MEM_BASE_TADDR || w_dev == 0));
 
     // wire [31:0] w_cluster_dram_addr = (w_iscode && !w_tlb_busy) ? w_cluster_iaddr : (w_is_paddr || !w_tlb_acs || w_tlb_hit) ? w_cluster_dev_addr : w_tlb_pte_addr;

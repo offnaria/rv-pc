@@ -112,8 +112,8 @@ module m_mmu (
     wire [31:0] L0_pte_write    = L0_pte | `PTE_A_MASK | ((w_iswrite || w_is_amo_load) ? `PTE_D_MASK : 0);
     assign w_pte_we             = (r_pw_state==5) && (((L1_xwr != 0 && L1_success) && L1_write) ||
                                         ((L0_xwr != 0 && L0_success) && L0_write));
-    wire [31:0] w_pte_waddr     = (L1_xwr != 0 && L1_success) ? L1_pte_addr : L0_pte_addr;
-    assign w_pte_wdata          = (L1_xwr != 0 && L1_success) ? L1_pte_write : L0_pte_write;
+    wire [31:0] w_pte_waddr     = (L1_xwr != 0) ? L1_pte_addr : L0_pte_addr;
+    assign w_pte_wdata          = (L1_xwr != 0) ? L1_pte_write : L0_pte_write;
 
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
                                     (r_iswrite || r_is_amo_load) ? `CAUSE_STORE_PAGE_FAULT : `CAUSE_LOAD_PAGE_FAULT;
