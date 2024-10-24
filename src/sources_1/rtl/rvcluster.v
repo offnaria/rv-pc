@@ -46,7 +46,7 @@ module m_RVCluster #(
     wire w_cluster_tlb_acs;
     wire w_cluster_pte_we;
     wire [31:0] w_cluster_pte_wdata;
-    wire w_cluster_pw_state;
+    wire [2:0] w_cluster_pw_state;
 
     assign w_cluster_data_we   = (w_cluster_pw_running) ? w_cluster_pte_we : w_cluster_iswrite;
     assign w_cluster_dev_addr  = w_cluster_daddr;
