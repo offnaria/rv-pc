@@ -22,7 +22,6 @@ module m_RVCluster #(
     output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
-    output wire               w_cluster_pte_we,
     output wire [31:0]        w_cluster_pte_wdata,
     output wire [2:0]         w_cluster_pw_state,
     output wire               w_cluster_data_we,
@@ -47,8 +46,9 @@ module m_RVCluster #(
     wire [2:0] w_cluster_tlb_usage;
     wire [31:0] w_cluster_tlb_pte_addr;
     wire w_cluster_tlb_acs;
+    wire w_cluster_pte_we;
 
-    assign w_cluster_data_we   = w_cluster_iswrite && !w_cluster_pw_running;
+    assign w_cluster_data_we   = (w_cluster_pw_running) ? w_cluster_pte_we : w_cluster_iswrite;
     assign w_cluster_dev_addr  = w_cluster_daddr;
     assign w_cluster_dram_addr = (w_cluster_iscode && !w_cluster_pw_running) ? w_cluster_iaddr : (w_cluster_is_paddr || !w_cluster_tlb_acs || w_cluster_tlb_hit) ? w_cluster_dev_addr : w_cluster_tlb_pte_addr;
     assign w_cluster_mem_ctrl  = (w_cluster_iscode && !w_cluster_pw_running) ? `FUNCT3_LW____ :              // TLB hit with instruction fetch

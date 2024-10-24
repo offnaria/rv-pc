@@ -297,7 +297,6 @@ module m_main(
         .r_finish       (w_finish),
         .w_mtime        (w_mtime),
         // MMU
-        .w_pte_we       (w_cluster_pte_we),
         .w_pte_wdata    (w_cluster_pte_wdata),
         .w_pw_state     (w_cluster_pw_state),
         // MMU end
@@ -363,7 +362,6 @@ module m_main(
 
     wire [31:0] w_cluster_iaddr;
     wire [31:0] w_cluster_daddr;
-    wire        w_cluster_pte_we;
     wire [31:0] w_cluster_pte_wdata;
     wire [2:0]  w_cluster_pw_state;
 
@@ -390,7 +388,6 @@ module m_main(
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
-        .w_cluster_pte_we(w_cluster_pte_we),
         .w_cluster_pte_wdata(w_cluster_pte_wdata),
         .w_cluster_pw_state(w_cluster_pw_state),
         .w_cluster_data_we  (w_cluster_data_we),

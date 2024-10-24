@@ -24,7 +24,6 @@ module m_interconnect #(
     output reg          r_finish,
     input  wire [63:0]  w_mtime,
     // MMU
-    input  wire         w_pte_we,
     input  wire [31:0]  w_pte_wdata,
     input  wire [2:0]   w_pw_state,
     // MMU end
@@ -533,7 +532,7 @@ module m_interconnect #(
 
     assign w_dram_wdata_t = (r_init_state == 1) ? 32'b0 :
                             (r_init_state == 4) ? w_dram_wdata : w_pl_init_data;
-    wire w_dram_we_t = (w_pte_we || w_dram_we) && !w_dram_busy;
+    wire w_dram_we_t = w_dram_we && !w_dram_busy;
     assign w_dram_ctrl_t = (!w_init_done) ? `FUNCT3_SW____ : w_dram_ctrl;
 
     reg  [31:0] r_addr = 0;
