@@ -257,7 +257,7 @@ module m_interconnect #(
     wire [31:0] w_mouse_qsel;
 
     /***********************************      Simple Framebuffer     ***********************************/
-    assign w_fb_we = (w_cluster_data_we && w_dev == `VIRTIO_BASE_TADDR && w_virt == 5);
+    assign w_fb_we = w_mode_is_cpu && w_cluster_data_we && (w_dev == `VIRTIO_BASE_TADDR) && (w_virt == 5);
     assign w_fb_wdata = w_mem_wdata;
 
     /***********************************          OUTPUT        ***********************************/
