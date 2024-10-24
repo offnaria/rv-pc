@@ -418,7 +418,7 @@ module m_interconnect #(
     /***********************************           PLIC         ***********************************/
     assign w_plic_we = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && w_cluster_data_we;
     assign w_plic_wdata = w_cluster_data_wdata;
-    assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && !w_tlb_busy && w_isread;
+    assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && w_cluster_dram_re;
 
     /***********************************           BUSY         ***********************************/
     assign w_tlb_busy = (!w_use_tlb)      ? 0 :

@@ -59,7 +59,7 @@ module m_RVCluster #(
                                  (w_cluster_pw_state == 5)                   ? `FUNCT3_SW____              : // Update leaf PTE
                                  w_core_mem_ctrl[r_hart_sel];                                                // Otherwise
     assign w_cluster_dram_re   = (w_cluster_is_paddr) ? (w_cluster_iscode || w_cluster_isread) :                                             // Access with physical address (No address translation)
-                                 (w_cluster_tlb_usage[2:1]!=0) ? 1 :                                                                         // TLB hit with instruction fetch or load (1 cycle delayed)
+                                 (w_cluster_tlb_usage[2:1]!=0) ? w_cluster_pw_done :                                                         // TLB hit with instruction fetch or load (1 cycle delayed)
                                  (w_cluster_pw_running && !w_cluster_tlb_hit && (w_cluster_pw_state == 0 || w_cluster_pw_state==2)) ? 1 : 0; // TLB miss, load L2 PTE or L1 PTE
 
     wire [31:0] w_core_iaddr        [0:N_HARTS-1];
@@ -186,7 +186,7 @@ module m_RVCluster #(
     );
 `ifdef SYNTHESIS
 generate
-    if (1) begin
+    if (DEBUG) begin
         ila_mmu_permission ila_mmu_permission (
             .clk(CLK), // input wire clk
             .probe0(w_core_priv[r_hart_sel]), // input wire [0:0]  probe0  
