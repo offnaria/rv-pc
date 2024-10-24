@@ -23,18 +23,12 @@ module m_interconnect #(
     output wire         w_is_dram_data,
     output reg          r_finish,
     input  wire [63:0]  w_mtime,
-    input  wire         w_is_paddr,
     // MMU
-    input  wire         w_iscode,
     input  wire         w_isread,
-    input  wire         w_iswrite,
     input  wire         w_pte_we,
     input  wire [31:0]  w_pte_wdata,
     input  wire         w_use_tlb,
-    input  wire         w_tlb_hit,
     input  wire [2:0]   w_pw_state,
-    input  wire  [2:0]  w_tlb_usage,
-    input  wire         w_tlb_acs,
     // MMU end
     output wire         w_interconnect_busy,
     output wire         w_txd,

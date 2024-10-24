@@ -296,18 +296,12 @@ module m_main(
         .w_is_dram_data (w_is_dram_data),
         .r_finish       (w_finish),
         .w_mtime        (w_mtime),
-        .w_is_paddr     (w_cluster_is_paddr),
         // MMU
-        .w_iscode       (w_cluster_iscode),
         .w_isread       (w_cluster_isread),
-        .w_iswrite      (w_cluster_iswrite),
         .w_pte_we       (w_cluster_pte_we),
         .w_pte_wdata    (w_cluster_pte_wdata),
         .w_use_tlb      (w_cluster_use_tlb),
-        .w_tlb_hit      (w_cluster_tlb_hit),
         .w_pw_state     (w_cluster_pw_state),
-        .w_tlb_usage    (w_cluster_tlb_usage),
-        .w_tlb_acs      (w_cluster_tlb_acs),
         // MMU end
         .w_interconnect_busy(w_interconnect_busy),
         .w_txd          (w_txd),
@@ -372,18 +366,11 @@ module m_main(
 
     wire [31:0] w_cluster_iaddr;
     wire [31:0] w_cluster_daddr;
-    wire        w_cluster_is_paddr;
-    wire        w_cluster_iscode;
     wire        w_cluster_isread;
-    wire        w_cluster_iswrite;
     wire        w_cluster_pte_we;
     wire [31:0] w_cluster_pte_wdata;
     wire        w_cluster_use_tlb;
-    wire        w_cluster_tlb_hit;
     wire [2:0]  w_cluster_pw_state;
-    wire [2:0]  w_cluster_tlb_usage;
-    wire [31:0] w_cluster_tlb_pte_addr;
-    wire        w_cluster_tlb_acs;
 
     m_RVCluster #(
         .N_HARTS(N_HARTS)
@@ -408,18 +395,11 @@ module m_main(
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
-        .w_cluster_is_paddr(w_cluster_is_paddr),
-        .w_cluster_iscode(w_cluster_iscode),
         .w_cluster_isread(w_cluster_isread),
-        .w_cluster_iswrite(w_cluster_iswrite),
         .w_cluster_pte_we(w_cluster_pte_we),
         .w_cluster_pte_wdata(w_cluster_pte_wdata),
         .w_cluster_use_tlb(w_cluster_use_tlb),
-        .w_cluster_tlb_hit(w_cluster_tlb_hit),
         .w_cluster_pw_state(w_cluster_pw_state),
-        .w_cluster_tlb_usage(w_cluster_tlb_usage),
-        .w_cluster_tlb_pte_addr(w_cluster_tlb_pte_addr),
-        .w_cluster_tlb_acs(w_cluster_tlb_acs),
         .w_cluster_data_we  (w_cluster_data_we),
         .w_cluster_dev_addr (w_cluster_dev_addr),
         .w_cluster_dram_addr(w_cluster_dram_addr),

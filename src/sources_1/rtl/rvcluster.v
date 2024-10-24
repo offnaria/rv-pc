@@ -22,18 +22,11 @@ module m_RVCluster #(
     output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
-    output wire               w_cluster_is_paddr,
-    output wire               w_cluster_iscode,
     output wire               w_cluster_isread,
-    output wire               w_cluster_iswrite,
     output wire               w_cluster_pte_we,
     output wire [31:0]        w_cluster_pte_wdata,
     output wire               w_cluster_use_tlb,
-    output wire               w_cluster_tlb_hit,
     output wire [2:0]         w_cluster_pw_state,
-    output wire [2:0]         w_cluster_tlb_usage,
-    output wire [31:0]        w_cluster_tlb_pte_addr,
-    output wire               w_cluster_tlb_acs,
     output wire               w_cluster_data_we,
     output wire [31:0]        w_cluster_dev_addr,
     output wire [31:0]        w_cluster_dram_addr,
@@ -47,19 +40,27 @@ module m_RVCluster #(
     wire w_cluster_pw_done;
     wire w_cluster_pw_running = w_cluster_use_tlb && !w_cluster_pw_done;
 
+    wire w_cluster_is_paddr;
+    wire w_cluster_iscode;
+    wire w_cluster_iswrite;
+    wire w_cluster_tlb_hit;
+    wire [2:0] w_cluster_tlb_usage;
+    wire [31:0] w_cluster_tlb_pte_addr;
+    wire w_cluster_tlb_acs;
+
     assign w_cluster_data_we   = w_cluster_iswrite && !w_cluster_pw_running;
     assign w_cluster_dev_addr  = w_cluster_daddr;
     assign w_cluster_dram_addr = (w_cluster_iscode && !w_cluster_pw_running) ? w_cluster_iaddr : (w_cluster_is_paddr || !w_cluster_tlb_acs || w_cluster_tlb_hit) ? w_cluster_dev_addr : w_cluster_tlb_pte_addr;
-    assign w_cluster_mem_ctrl  = (w_cluster_iscode && !w_cluster_pw_running) ? `FUNCT3_LW____ : 
-                                 (w_cluster_is_paddr)                        ? w_core_mem_ctrl[r_hart_sel] :
-                                 (w_cluster_tlb_usage[1:0]!=0)               ? w_core_mem_ctrl[r_hart_sel] :
-                                 (w_cluster_pw_state == 0)                   ? `FUNCT3_LW____              :
-                                 (w_cluster_pw_state == 2)                   ? `FUNCT3_LW____              :
-                                 (w_cluster_pw_state == 5)                   ? `FUNCT3_SW____              :
-                                 w_core_mem_ctrl[r_hart_sel];
-    assign w_cluster_dram_re   = (w_cluster_is_paddr) ? (w_cluster_iscode || w_cluster_isread) :
-                                 (w_cluster_tlb_usage[2:1]!=0) ? 1 :
-                                 (w_cluster_pw_running && !w_cluster_tlb_hit && (w_cluster_pw_state == 0 || w_cluster_pw_state==2)) ? 1 : 0;
+    assign w_cluster_mem_ctrl  = (w_cluster_iscode && !w_cluster_pw_running) ? `FUNCT3_LW____ :              // TLB hit with instruction fetch
+                                 (w_cluster_is_paddr)                        ? w_core_mem_ctrl[r_hart_sel] : // Access with physical address (No address translation)
+                                 (w_cluster_tlb_usage[1:0]!=0)               ? w_core_mem_ctrl[r_hart_sel] : // TLB hit with load or store (1 cycle delayed)
+                                 (w_cluster_pw_state == 0)                   ? `FUNCT3_LW____              : // TLB miss, load L2 PTE
+                                 (w_cluster_pw_state == 2)                   ? `FUNCT3_LW____              : // TLB miss, load L1 PTE
+                                 (w_cluster_pw_state == 5)                   ? `FUNCT3_SW____              : // Update leaf PTE
+                                 w_core_mem_ctrl[r_hart_sel];                                                // Otherwise
+    assign w_cluster_dram_re   = (w_cluster_is_paddr) ? (w_cluster_iscode || w_cluster_isread) :                                             // Access with physical address (No address translation)
+                                 (w_cluster_tlb_usage[2:1]!=0) ? 1 :                                                                         // TLB hit with instruction fetch or load (1 cycle delayed)
+                                 (w_cluster_pw_running && !w_cluster_tlb_hit && (w_cluster_pw_state == 0 || w_cluster_pw_state==2)) ? 1 : 0; // TLB miss, load L2 PTE or L1 PTE
 
     wire [31:0] w_core_iaddr        [0:N_HARTS-1];
     wire [31:0] w_core_daddr        [0:N_HARTS-1];
@@ -185,7 +186,7 @@ module m_RVCluster #(
     );
 `ifdef SYNTHESIS
 generate
-    if (DEBUG) begin
+    if (1) begin
         ila_mmu_permission ila_mmu_permission (
             .clk(CLK), // input wire clk
             .probe0(w_core_priv[r_hart_sel]), // input wire [0:0]  probe0  
