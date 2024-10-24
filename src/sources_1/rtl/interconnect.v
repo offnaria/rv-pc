@@ -24,10 +24,8 @@ module m_interconnect #(
     output reg          r_finish,
     input  wire [63:0]  w_mtime,
     // MMU
-    input  wire         w_isread,
     input  wire         w_pte_we,
     input  wire [31:0]  w_pte_wdata,
-    input  wire         w_use_tlb,
     input  wire [2:0]   w_pw_state,
     // MMU end
     output wire         w_interconnect_busy,
@@ -54,7 +52,6 @@ module m_interconnect #(
     inout  wire        pmod_ps2_data,
 `endif
     output wire [2:0]   w_mc_mode,
-    output wire         w_tlb_busy,
     // DRAM
     input  wire         w_dram_busy,
     output wire         w_dram_rd_en,
@@ -421,9 +418,6 @@ module m_interconnect #(
     assign w_plic_re = (w_mode_is_cpu && w_dev == `PLIC_BASE_TADDR) && w_cluster_dram_re;
 
     /***********************************           BUSY         ***********************************/
-    assign w_tlb_busy = (!w_use_tlb)      ? 0 :
-                        (w_pw_state == 7) ? 0 : 1;
-
     wire w_mc_busy = (w_mode_is_mc) ? 1 : 0;
 
     wire w_tx_ready;

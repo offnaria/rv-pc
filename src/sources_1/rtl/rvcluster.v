@@ -22,10 +22,8 @@ module m_RVCluster #(
     output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
-    output wire               w_cluster_isread,
     output wire               w_cluster_pte_we,
     output wire [31:0]        w_cluster_pte_wdata,
-    output wire               w_cluster_use_tlb,
     output wire [2:0]         w_cluster_pw_state,
     output wire               w_cluster_data_we,
     output wire [31:0]        w_cluster_dev_addr,
@@ -42,8 +40,10 @@ module m_RVCluster #(
 
     wire w_cluster_is_paddr;
     wire w_cluster_iscode;
+    wire w_cluster_isread;
     wire w_cluster_iswrite;
     wire w_cluster_tlb_hit;
+    wire w_cluster_use_tlb;
     wire [2:0] w_cluster_tlb_usage;
     wire [31:0] w_cluster_tlb_pte_addr;
     wire w_cluster_tlb_acs;

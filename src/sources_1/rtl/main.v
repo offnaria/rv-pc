@@ -204,7 +204,7 @@ module m_main(
     end
 
 
-    wire w_tlb_busy;
+    wire w_tlb_busy = 0; // TODO
     reg [63:0] tlb_cnt = 0, dram_cnt = 0;
     always @ (posedge CORE_CLK) begin
         if (!RST_X) begin
@@ -297,10 +297,8 @@ module m_main(
         .r_finish       (w_finish),
         .w_mtime        (w_mtime),
         // MMU
-        .w_isread       (w_cluster_isread),
         .w_pte_we       (w_cluster_pte_we),
         .w_pte_wdata    (w_cluster_pte_wdata),
-        .w_use_tlb      (w_cluster_use_tlb),
         .w_pw_state     (w_cluster_pw_state),
         // MMU end
         .w_interconnect_busy(w_interconnect_busy),
@@ -327,7 +325,6 @@ module m_main(
 `endif
         .w_init_start   (w_init_start),
         .w_mc_mode      (w_mc_mode),
-        .w_tlb_busy     (w_tlb_busy),
         // DRAM
         .w_dram_busy    (w_dram_busy),
         .w_dram_rd_en   (w_dram_rd_en),
@@ -366,10 +363,8 @@ module m_main(
 
     wire [31:0] w_cluster_iaddr;
     wire [31:0] w_cluster_daddr;
-    wire        w_cluster_isread;
     wire        w_cluster_pte_we;
     wire [31:0] w_cluster_pte_wdata;
-    wire        w_cluster_use_tlb;
     wire [2:0]  w_cluster_pw_state;
 
     m_RVCluster #(
@@ -395,10 +390,8 @@ module m_main(
         .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
-        .w_cluster_isread(w_cluster_isread),
         .w_cluster_pte_we(w_cluster_pte_we),
         .w_cluster_pte_wdata(w_cluster_pte_wdata),
-        .w_cluster_use_tlb(w_cluster_use_tlb),
         .w_cluster_pw_state(w_cluster_pw_state),
         .w_cluster_data_we  (w_cluster_data_we),
         .w_cluster_dev_addr (w_cluster_dev_addr),
