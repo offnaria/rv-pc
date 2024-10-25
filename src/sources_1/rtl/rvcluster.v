@@ -14,7 +14,6 @@ module m_RVCluster #(
     input  wire [N_HARTS-1:0] w_seip,
     input  wire [63:0]        w_mtime,
     input  wire [31:0]        w_dram_odata,
-    input  wire               w_mode_is_cpu,
     input  wire               w_next_mode_is_mc,
 
     output wire [31:0]        w_cluster_iaddr,
@@ -29,6 +28,8 @@ module m_RVCluster #(
 );
 
     localparam DEBUG = 0;
+
+    wire w_mode_is_cpu = (w_mc_mode == `MC_MODE_CPU);
 
     wire w_cluster_tlb_busy;
     wire w_cluster_pw_done;

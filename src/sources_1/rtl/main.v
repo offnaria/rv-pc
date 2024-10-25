@@ -375,7 +375,6 @@ module m_main(
         .w_seip(w_seip),
         .w_mtime(w_mtime),
         .w_dram_odata(interconn.w_dram_odata),
-        .w_mode_is_cpu(interconn.w_mode_is_cpu),
         .w_next_mode_is_mc(interconn.w_virtio_req),
         .w_cluster_iaddr(w_cluster_iaddr),
         .w_cluster_daddr(w_cluster_daddr),
