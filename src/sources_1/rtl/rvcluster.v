@@ -16,8 +16,6 @@ module m_RVCluster #(
     input  wire [31:0]        w_dram_odata,
     input  wire               w_next_mode_is_mc,
 
-    output wire [31:0]        w_cluster_iaddr,
-    output wire [31:0]        w_cluster_daddr,
     output wire [31:0]        w_cluster_data_wdata,
     output wire               w_cluster_init_stage,
     output wire               w_cluster_data_we,
@@ -49,8 +47,8 @@ module m_RVCluster #(
     wire [2:0] w_cluster_pw_state;
 
     assign w_cluster_data_we   = (w_cluster_pw_running) ? w_cluster_pte_we : w_cluster_iswrite;
-    assign w_cluster_dev_addr  = w_cluster_daddr;
-    assign w_cluster_dram_addr = (w_cluster_iscode && !w_cluster_pw_running) ? w_cluster_iaddr : (w_cluster_is_paddr || !w_cluster_tlb_acs || w_cluster_tlb_hit) ? w_cluster_dev_addr : w_cluster_tlb_pte_addr;
+    assign w_cluster_dev_addr  = w_core_daddr[r_hart_sel];
+    assign w_cluster_dram_addr = (w_cluster_iscode && !w_cluster_pw_running) ? w_core_iaddr[r_hart_sel] : (w_cluster_is_paddr || !w_cluster_tlb_acs || w_cluster_tlb_hit) ? w_cluster_dev_addr : w_cluster_tlb_pte_addr;
     assign w_cluster_mem_ctrl  = (w_cluster_iscode && !w_cluster_pw_running) ? `FUNCT3_LW____ :              // TLB hit with instruction fetch
                                  (w_cluster_is_paddr)                        ? w_core_mem_ctrl[r_hart_sel] : // Access with physical address (No address translation)
                                  (w_cluster_tlb_usage[1:0]!=0)               ? w_core_mem_ctrl[r_hart_sel] : // TLB hit with load or store (1 cycle delayed)
@@ -217,8 +215,6 @@ endgenerate
         end
     end
 
-    assign w_cluster_iaddr = w_core_iaddr[r_hart_sel];
-    assign w_cluster_daddr = w_core_daddr[r_hart_sel];
     assign w_cluster_data_wdata = (w_cluster_pw_running) ? w_cluster_pte_wdata : w_core_data_wdata[r_hart_sel];
     assign w_cluster_init_stage = w_core_init_stage[r_hart_sel];
     // assign w_cluster_data_we = w_core_data_we[r_hart_sel]; // TODO: Assign this
@@ -247,8 +243,8 @@ generate
             .clk(CLK), // input wire clk
             .probe0(w_core_pc[0]), // input wire [31:0]  probe0  
             .probe1(w_core_pc[1]), // input wire [31:0]  probe1 
-            .probe2(w_cluster_iaddr), // input wire [31:0]  probe2 
-            .probe3(w_cluster_daddr), // input wire [31:0]  probe3 
+            .probe2(w_core_iaddr[r_hart_sel]), // input wire [31:0]  probe2 
+            .probe3(w_core_daddr[r_hart_sel]), // input wire [31:0]  probe3 
             .probe4(r_hart_sel), // input wire [3:0]  probe4 
             .probe5(w_core_satp[0]), // input wire [31:0]  probe5 
             .probe6(w_core_satp[1]), // input wire [31:0]  probe6

@@ -356,9 +356,6 @@ module m_main(
         .w_offset       (w_offset)
     );
 
-    wire [31:0] w_cluster_iaddr;
-    wire [31:0] w_cluster_daddr;
-
     m_RVCluster #(
         .N_HARTS(N_HARTS)
     ) cluster(
@@ -376,8 +373,6 @@ module m_main(
         .w_mtime(w_mtime),
         .w_dram_odata(interconn.w_dram_odata),
         .w_next_mode_is_mc(interconn.w_virtio_req),
-        .w_cluster_iaddr(w_cluster_iaddr),
-        .w_cluster_daddr(w_cluster_daddr),
         .w_cluster_data_wdata(w_cluster_data_wdata),
         .w_cluster_init_stage(w_init_stage),
         .w_cluster_data_we  (w_cluster_data_we),
