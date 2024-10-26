@@ -13,7 +13,6 @@ module m_RVCluster #(
     input  wire [N_HARTS-1:0] w_meip,
     input  wire [N_HARTS-1:0] w_seip,
     input  wire [63:0]        w_mtime,
-    input  wire [31:0]        w_dram_odata,
     input  wire               w_next_mode_is_mc,
 
     output wire [31:0]        w_cluster_data_wdata,
@@ -153,6 +152,11 @@ module m_RVCluster #(
     endgenerate
 
     wire [31:0] w_mmu_pagefault;
+
+    reg [3:0] r_cluster_tlb_pte_addr_offset;
+    always @(posedge CLK) begin
+        if (w_cluster_pw_running && !w_cluster_tlb_hit && (w_cluster_pw_state == 0 || w_cluster_pw_state==2)) r_cluster_tlb_pte_addr_offset <= w_cluster_tlb_pte_addr[3:0];
+    end
     m_mmu mmu (
         .CLK(CLK),
         .w_tlb_req(w_core_tlb_req[r_hart_sel]),
@@ -162,7 +166,7 @@ module m_RVCluster #(
         .w_satp(w_core_satp[r_hart_sel]),
         .w_mstatus(w_core_mstatus[r_hart_sel]),
         .w_dram_busy(w_interconnect_busy),
-        .w_dram_odata(w_dram_odata),
+        .w_dram_odata(w_insn_data >> {r_cluster_tlb_pte_addr_offset, 3'd0}), // Shifting with {addr[3:2], 5'd0} might be allowed, but use byte-addressing just in case.
         .w_tlb_flush(w_flush_all_tlbs),
         .w_mode_is_cpu(w_mode_is_cpu),
         .w_is_amo_load(w_core_is_amo_load[r_hart_sel]),
