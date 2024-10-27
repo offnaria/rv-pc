@@ -126,7 +126,7 @@ module m_mmu (
     wire        w_tlb_inst_hit, w_tlb_data_hit;
     assign w_use_tlb = (w_mode_is_cpu && (w_iscode || w_isread || w_iswrite)
                                           && (!(w_priv == `PRIV_M || w_satp[31] == 0)));
-    assign w_tlb_hit = ((w_iscode && w_tlb_inst_hit) || ((w_isread || w_iswrite) && w_tlb_data_hit)) && !w_tlb_dirty_miss;
+    assign w_tlb_hit = ((w_iscode && w_tlb_inst_hit) || ((w_isread || w_iswrite) && w_tlb_data_hit)) && !w_tlb_dirty_miss && !w_tlb_permission_miss;
     assign w_pw_done = (r_pw_state == 7);
 
     wire [2:0] w_tlb_permission_xwr = w_mstatus[MSTATUS_MXR_BIT] ? (w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, w_tlb_permission[TLB_PTE_X_BIT]}) : w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
@@ -146,15 +146,10 @@ module m_mmu (
                     r_tlb_busy <= 1;
                 end
                 else begin
-                    if (w_tlb_permission_miss) begin
-                        r_pw_state <= 6;
-                        page_walk_fail <= 1;
-                    end else begin
-                        r_pw_state <= 7;
-                        r_tlb_busy <= 1;
-                        r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
-                        r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
-                    end
+                    r_pw_state <= 7;
+                    r_tlb_busy <= 1;
+                    r_tlb_addr <= {(w_iscode) ? w_tlb_inst_addr : (w_isread || w_iswrite) ? w_tlb_data_addr : 22'd0, v_addr[11:0]};
+                    r_tlb_usage <= {w_iscode, w_isread, w_iswrite};
                 end
                 {r_iscode, r_isread, r_iswrite, r_is_amo_load} <= {w_iscode, w_isread, w_iswrite, w_is_amo_load};
             end
@@ -215,12 +210,6 @@ module m_mmu (
             physical_addr   <= 0;
             page_walk_fail  <= 0;
             r_permission    <= 0;
-        end
-        else if(r_pw_state == 6) begin
-            r_pw_state <= 0;
-            r_tlb_usage <= 0;
-            r_tlb_busy <= 0;
-            page_walk_fail <= 0;
         end
         else if(r_pw_state == 7) begin
             r_pw_state <= 0;
