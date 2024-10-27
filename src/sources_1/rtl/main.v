@@ -140,7 +140,7 @@ module m_main(
 
     wire [31:0] w_priv, w_satp;
     wire        w_interconnect_busy;
-    wire        w_busy = w_interconnect_busy || cluster.w_cluster_tlb_busy;
+    wire        w_busy = w_interconnect_busy/* || cluster.cores_and_mmus[w_hart_sel].core_wrapper.w_mmu_tlb_busy */;
     wire        w_init_done;
     wire        w_init_stage;
 
@@ -644,6 +644,12 @@ module m_main(
 `endif
 
     /***********************************      DRAM     ***********************************/
+    always @(posedge CORE_CLK) begin
+        if (w_cluster_dram_addr==32'h80418c00 && w_cluster_dram_re) begin
+            $write("PTE %08x\n", dram_sim0.r_ram[32'h80418c00 >> 2]);
+            $finish;
+        end
+    end
     wire         RST_X2;
     wire         w_dram_rd_en;
     wire         w_dram_wr_en;
