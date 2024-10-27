@@ -644,12 +644,6 @@ module m_main(
 `endif
 
     /***********************************      DRAM     ***********************************/
-    always @(posedge CORE_CLK) begin
-        if (w_cluster_dram_addr==32'h80418c00 && w_cluster_dram_re) begin
-            $write("PTE %08x\n", dram_sim0.r_ram[32'h80418c00 >> 2]);
-            $finish;
-        end
-    end
     wire         RST_X2;
     wire         w_dram_rd_en;
     wire         w_dram_wr_en;

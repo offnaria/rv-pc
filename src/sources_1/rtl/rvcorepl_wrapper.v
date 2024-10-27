@@ -128,8 +128,8 @@ module m_RVCorePL_wrapper #(
     end
 
     wire  [1:0] w_mmu_tlb_req = w_instance_tlb_req;
-    wire [31:0] w_mmu_insn_addr = w_instance_insn_data;
-    wire [31:0] w_mmu_data_addr = w_instance_data_data;
+    wire [31:0] w_mmu_insn_addr = w_instance_insn_addr;
+    wire [31:0] w_mmu_data_addr = w_instance_data_addr;
     wire [31:0] w_mmu_priv = w_instance_priv;
     wire [31:0] w_mmu_satp = w_instance_satp;
     wire [31:0] w_mmu_mstatus = w_instance_mstatus;
