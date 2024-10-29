@@ -118,7 +118,7 @@ module m_inst_cache_dmap #(
     input  wire               w_inst_request,
     input  wire  [W_DATA-1:0] w_dram_data,
     input  wire               w_dram_response,
-    input  wire               w_use_tlb,
+    input  wire               w_is_paddr,
     input  wire               w_tlb_hit,
     input  wire               w_page_walk_fail,
     input  wire  [W_ADDR-1:0] w_tlb_address,
@@ -181,7 +181,7 @@ module m_inst_cache_dmap #(
             r_state <= w_next_state;
             if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
                 r_valid[w_index] <= 1;
-                r_tag[w_index] <= (w_use_tlb) ? w_tlb_tag : w_tag;
+                r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
                 r_data[w_index] <= w_dram_data;
             end
             if (w_invalidate_request && w_invalidate_tag_match) begin // We don't need to check the valid bit here.
@@ -198,7 +198,13 @@ module m_inst_cache_dmap #(
             S_INIT: begin
                 if (w_inst_request) begin
                     // First, check the TLB. Then, check the cache.
-                    if (w_use_tlb) begin
+                    if (w_is_paddr) begin
+                        if (r_valid[w_index] && w_tag_match) begin
+                            w_hit_t = 1;
+                        end else begin
+                            w_next_state = S_WAIT_DRAM;
+                        end
+                    end else begin
                         if (w_tlb_hit) begin
                             if (r_valid[w_index] && w_tlb_tag_match) begin
                                 w_hit_t = 1;
@@ -207,12 +213,6 @@ module m_inst_cache_dmap #(
                             end
                         end else begin
                             w_next_state = S_WAIT_TLB;
-                        end
-                    end else begin
-                        if (r_valid[w_index] && w_tag_match) begin
-                            w_hit_t = 1;
-                        end else begin
-                            w_next_state = S_WAIT_DRAM;
                         end
                     end
                 end
