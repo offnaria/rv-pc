@@ -137,6 +137,7 @@ module m_RVCorePL_wrapper #(
     wire [31:0] w_mmu_dram_odata = (w_insn_data >> {r_mmu_tlb_pte_addr_offset, 3'd0});
     wire        w_mmu_tlb_flush = w_instance_tlb_flush;
     wire        w_mmu_mode_is_cpu = (w_mc_mode == `MC_MODE_CPU);
+    wire        w_mmu_tlb_request = w_mmu_mode_is_cpu && !w_instance_is_paddr;
     wire        w_mmu_is_amo_load = w_instance_is_amo_load;
 
     wire        w_mmu_iscode;
@@ -167,7 +168,7 @@ module m_RVCorePL_wrapper #(
         .w_dram_busy(w_mmu_dram_busy),
         .w_dram_odata(w_mmu_dram_odata),
         .w_tlb_flush(w_mmu_tlb_flush),
-        .w_mode_is_cpu(w_mmu_mode_is_cpu),
+        .w_tlb_request(w_mmu_tlb_request),
         .w_is_amo_load(w_mmu_is_amo_load),
         // Outputs
         .w_iscode(w_mmu_iscode),
@@ -184,7 +185,10 @@ module m_RVCorePL_wrapper #(
         .w_tlb_usage(w_mmu_tlb_usage),
         .w_tlb_pte_addr(w_mmu_tlb_pte_addr),
         .w_tlb_acs(w_mmu_tlb_acs),
-        .w_pw_done(w_mmu_pw_done)
+        .w_pw_done(w_mmu_pw_done),
+        .w_page_walk_fail(),
+        .w_tlb_inst_ok(),
+        .w_tlb_data_ok()
     );
 
     wire w_mmu_pw_running = w_mmu_use_tlb && !w_mmu_pw_done;

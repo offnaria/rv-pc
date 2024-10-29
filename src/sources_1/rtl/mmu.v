@@ -11,7 +11,7 @@ module m_mmu (
     input wire        w_dram_busy,
     input wire [31:0] w_dram_odata,
     input wire        w_tlb_flush,
-    input wire        w_mode_is_cpu,
+    input wire        w_tlb_request,
     input wire        w_is_amo_load,
 
     output wire        w_iscode,
@@ -28,7 +28,10 @@ module m_mmu (
     output wire  [2:0] w_tlb_usage,
     output wire [31:0] w_tlb_pte_addr,
     output wire        w_tlb_acs,
-    output wire        w_pw_done
+    output wire        w_pw_done,
+    output wire        w_page_walk_fail,
+    output wire        w_tlb_inst_ok,
+    output wire        w_tlb_data_ok
 );
     localparam VPN_WIDTH      = 20;
     localparam PPN_WIDTH      = 22;
@@ -117,6 +120,7 @@ module m_mmu (
 
     assign w_pagefault          = !page_walk_fail ? ~32'h0 : (r_iscode) ? `CAUSE_FETCH_PAGE_FAULT :
                                     (r_iswrite || r_is_amo_load) ? `CAUSE_STORE_PAGE_FAULT : `CAUSE_LOAD_PAGE_FAULT;
+    assign w_page_walk_fail     = page_walk_fail;
 
     reg  [31:0] r_tlb_addr = 0;
     reg   [2:0] r_tlb_usage  = 0;
@@ -124,16 +128,28 @@ module m_mmu (
     assign w_tlb_usage  = r_tlb_usage;
     wire [21:0] w_tlb_inst_addr, w_tlb_data_addr;
     wire        w_tlb_inst_hit, w_tlb_data_hit;
-    assign w_use_tlb = (w_mode_is_cpu && (w_iscode || w_isread || w_iswrite)
-                                          && (!(w_priv == `PRIV_M || w_satp[31] == 0)));
-    assign w_tlb_hit = ((w_iscode && w_tlb_inst_hit) || ((w_isread || w_iswrite) && w_tlb_data_hit)) && !w_tlb_dirty_miss && !w_tlb_permission_miss;
+    assign w_use_tlb = (w_tlb_request && (w_iscode || w_isread || w_iswrite));
+    assign w_tlb_hit = ((w_iscode && w_tlb_inst_ok) || ((w_isread || w_iswrite) && w_tlb_data_ok));
     assign w_pw_done = (r_pw_state == 7);
 
+    wire [2:0] w_tlb_data_permission_xwr = w_mstatus[MSTATUS_MXR_BIT] ? (w_tlb_data_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, w_tlb_data_permission[TLB_PTE_X_BIT]}) : w_tlb_data_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
+
+    wire w_tlb_inst_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_inst_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
+                    ((w_priv == `PRIV_U) && !w_tlb_inst_permission[TLB_PTE_U_BIT]); // U-mode is not allowed to access S-mode page.
+                    // Since the X bit is always 1 in the instruction TLB, it is not necessary to be checked.
+    wire w_tlb_data_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_data_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
+                    ((w_priv == `PRIV_U) && !w_tlb_data_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
+                    (w_tlb_data_permission_xwr[w_tlb_req] == 0); // Permission check.
+    wire w_tlb_dirty_miss = (w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
+
+    assign w_tlb_inst_ok = w_tlb_inst_hit && !w_tlb_inst_permission_miss;
+    assign w_tlb_data_ok = w_tlb_data_hit && !w_tlb_data_permission_miss && !w_tlb_dirty_miss;
+    
     wire [2:0] w_tlb_permission_xwr = w_mstatus[MSTATUS_MXR_BIT] ? (w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT] | {2'd0, w_tlb_permission[TLB_PTE_X_BIT]}) : w_tlb_permission[TLB_PTE_X_BIT:TLB_PTE_R_BIT];
     wire w_tlb_permission_miss = ((w_priv == `PRIV_S) && (w_tlb_permission[TLB_PTE_U_BIT] && !w_mstatus[MSTATUS_SUM_BIT])) || // S-mode without SUM=0 is not allowed to access U-mode page.
                     ((w_priv == `PRIV_U) && !w_tlb_permission[TLB_PTE_U_BIT]) || // U-mode is not allowed to access S-mode page.
                     (w_tlb_permission_xwr[w_tlb_req] == 0); // Permission check.
-    wire w_tlb_dirty_miss = (w_iswrite || w_is_amo_load) && !w_tlb_permission[TLB_PTE_D_BIT]; // Dirty bit is not set.
+
     reg r_pte_loaded = 0;
     // PAGE WALK state
     always@(posedge CLK) begin
