@@ -179,12 +179,12 @@ module m_inst_cache_dmap #(
             r_state <= S_INIT;
         end else begin
             r_state <= w_next_state;
+            // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
             if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
                 r_valid[w_index] <= 1;
                 r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
                 r_data[w_index] <= w_dram_data;
-            end
-            if (w_invalidate_request && w_invalidate_tag_match) begin // We don't need to check the valid bit here.
+            end else if (w_invalidate_request && w_invalidate_tag_match) begin // We don't need to check the valid bit here.
                 r_valid[w_invalidate_index] <= 1'b0;
             end
         end
