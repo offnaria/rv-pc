@@ -52,6 +52,41 @@ module m_RVCorePL_wrapper #(
     wire         w_instance_tlb_flush;
     wire         w_instance_is_amo_load;
 
+    wire w_instance_is_paddr = (w_instance_priv == `PRIV_M) || (!w_instance_satp[31]);
+    wire [31:0] w_instance_iaddr = (w_instance_is_paddr) ? w_instance_insn_addr : w_mmu_tlb_addr;
+    wire [31:0] w_instance_daddr = (w_instance_is_paddr) ? w_instance_data_addr : w_mmu_tlb_addr;
+
+    wire  [1:0] w_mmu_tlb_req;
+    wire [31:0] w_mmu_insn_addr = w_instance_insn_addr;
+    wire [31:0] w_mmu_data_addr = w_instance_data_addr;
+    wire [31:0] w_mmu_priv = w_instance_priv;
+    wire [31:0] w_mmu_satp = w_instance_satp;
+    wire [31:0] w_mmu_mstatus = w_instance_mstatus;
+    wire        w_mmu_dram_busy = w_interconnect_busy;
+    wire [31:0] w_mmu_dram_odata = (w_insn_data >> {r_mmu_tlb_pte_addr_offset, 3'd0});
+    wire        w_mmu_tlb_flush = w_instance_tlb_flush;
+    wire        w_mmu_mode_is_cpu = (w_mc_mode == `MC_MODE_CPU);
+    wire        w_mmu_tlb_request;
+    wire        w_mmu_is_amo_load = w_instance_is_amo_load;
+
+    wire        w_mmu_iscode;
+    wire        w_mmu_isread;
+    wire        w_mmu_iswrite;
+    wire        w_mmu_pte_we;
+    wire [31:0] w_mmu_pte_wdata;
+    wire [31:0] w_mmu_pagefault;
+    wire        w_mmu_use_tlb;
+    wire        w_mmu_tlb_hit;
+    wire  [2:0] w_mmu_pw_state;
+    wire        w_mmu_tlb_busy;
+    wire [31:0] w_mmu_tlb_addr;
+    wire  [2:0] w_mmu_tlb_usage;
+    wire [31:0] w_mmu_tlb_pte_addr;
+    wire        w_mmu_tlb_acs;
+    wire        w_mmu_pw_done;
+
+    wire w_mmu_pw_running = w_mmu_use_tlb && !w_mmu_pw_done;
+
     generate
         if (CACHED) begin
             
@@ -85,6 +120,9 @@ module m_RVCorePL_wrapper #(
             assign w_dram_re = (w_instance_is_paddr)                 ? (w_mmu_iscode || w_mmu_isread)                  : // Access with physical address (No address translation)
                                (w_mmu_tlb_usage[2:1] != 0)           ? w_mmu_pw_done                                   : // TLB hit with instruction fetch or load (1 cycle delayed)
                                (w_mmu_pw_running && !w_mmu_tlb_hit && ((w_mmu_pw_state == 0) || (w_mmu_pw_state == 2))); // TLB miss, load L2 PTE or L1 PTE
+
+            assign w_mmu_tlb_req = w_instance_tlb_req;
+            assign w_mmu_tlb_request = w_mmu_mode_is_cpu && !w_instance_is_paddr;
         end
     endgenerate
 
@@ -118,7 +156,7 @@ module m_RVCorePL_wrapper #(
         .w_tlb_flush(w_instance_tlb_flush),
         .w_is_amo_load(w_instance_is_amo_load)
     );
-    
+
     /***********************************        Local MMU       ***********************************/
     reg [3:0] r_mmu_tlb_pte_addr_offset = 0;
     always @(posedge CLK) begin
@@ -126,35 +164,6 @@ module m_RVCorePL_wrapper #(
             r_mmu_tlb_pte_addr_offset <= w_mmu_tlb_pte_addr[3:0];
         end
     end
-
-    wire  [1:0] w_mmu_tlb_req = w_instance_tlb_req;
-    wire [31:0] w_mmu_insn_addr = w_instance_insn_addr;
-    wire [31:0] w_mmu_data_addr = w_instance_data_addr;
-    wire [31:0] w_mmu_priv = w_instance_priv;
-    wire [31:0] w_mmu_satp = w_instance_satp;
-    wire [31:0] w_mmu_mstatus = w_instance_mstatus;
-    wire        w_mmu_dram_busy = w_interconnect_busy;
-    wire [31:0] w_mmu_dram_odata = (w_insn_data >> {r_mmu_tlb_pte_addr_offset, 3'd0});
-    wire        w_mmu_tlb_flush = w_instance_tlb_flush;
-    wire        w_mmu_mode_is_cpu = (w_mc_mode == `MC_MODE_CPU);
-    wire        w_mmu_tlb_request = w_mmu_mode_is_cpu && !w_instance_is_paddr;
-    wire        w_mmu_is_amo_load = w_instance_is_amo_load;
-
-    wire        w_mmu_iscode;
-    wire        w_mmu_isread;
-    wire        w_mmu_iswrite;
-    wire        w_mmu_pte_we;
-    wire [31:0] w_mmu_pte_wdata;
-    wire [31:0] w_mmu_pagefault;
-    wire        w_mmu_use_tlb;
-    wire        w_mmu_tlb_hit;
-    wire  [2:0] w_mmu_pw_state;
-    wire        w_mmu_tlb_busy;
-    wire [31:0] w_mmu_tlb_addr;
-    wire  [2:0] w_mmu_tlb_usage;
-    wire [31:0] w_mmu_tlb_pte_addr;
-    wire        w_mmu_tlb_acs;
-    wire        w_mmu_pw_done;
 
     m_mmu mmu_inst (
         // Inputs
@@ -190,9 +199,4 @@ module m_RVCorePL_wrapper #(
         .w_tlb_inst_ok(),
         .w_tlb_data_ok()
     );
-
-    wire w_mmu_pw_running = w_mmu_use_tlb && !w_mmu_pw_done;
-    wire w_instance_is_paddr = (w_instance_priv == `PRIV_M) || (!w_instance_satp[31]);
-    wire [31:0] w_instance_iaddr = (w_instance_is_paddr) ? w_instance_insn_addr : w_mmu_tlb_addr;
-    wire [31:0] w_instance_daddr = (w_instance_is_paddr) ? w_instance_data_addr : w_mmu_tlb_addr;
 endmodule
