@@ -84,6 +84,9 @@ module m_RVCorePL_wrapper #(
     wire [31:0] w_mmu_tlb_pte_addr;
     wire        w_mmu_tlb_acs;
     wire        w_mmu_pw_done;
+    wire        w_mmu_page_walk_fail;
+    wire        w_mmu_tlb_inst_ok;
+    wire        w_mmu_tlb_data_ok;
 
     wire w_mmu_pw_running = w_mmu_use_tlb && !w_mmu_pw_done;
 
@@ -96,6 +99,43 @@ module m_RVCorePL_wrapper #(
             localparam S_OCCUPATION_DATA = 2;
 
             reg [W_OCCUPATION-1:0] r_mmu_occupation = S_OCCUPATION_IDLE;
+
+            wire  [W_ADDR-1:0] w_icache_pc;
+            wire               w_icache_inst_request;
+            wire  [W_DATA-1:0] w_icache_dram_data;
+            wire               w_icache_dram_response;
+            wire               w_icache_is_paddr;
+            wire               w_icache_tlb_hit;
+            wire               w_icache_page_walk_fail;
+            wire  [W_ADDR-1:0] w_icache_tlb_address;
+            wire               w_icache_invalidate_request;
+            wire        [31:0] w_icache_invalidate_address;
+            wire               w_icache_flush;
+            wire               w_icache_hit;
+            wire  [W_DATA-1:0] w_icache_inst;
+            wire  [W_ADDR-1:0] w_icache_dram_address;
+            wire               w_icache_dram_request;
+            wire               w_icache_invalidate_done;
+
+            wire  [W_ADDR-1:0] w_dcache_data_addr;
+            wire               w_dcache_data_request;
+            wire               w_dcache_data_rw;
+            wire  [W_WORD-1:0] w_dcache_store_data;
+            wire         [2:0] w_dcache_funct3;
+            wire  [W_DATA-1:0] w_dcache_dram_data;
+            wire               w_dcache_dram_response;
+            wire               w_dcache_is_paddr;
+            wire               w_dcache_tlb_hit;
+            wire               w_dcache_page_walk_fail;
+            wire  [W_ADDR-1:0] w_dcache_tlb_address;
+            wire               w_dcache_invalidate_request;
+            wire        [31:0] w_dcache_invalidate_address;
+            wire               w_dcache_flush;
+            wire               w_dcache_hit;
+            wire  [W_DATA-1:0] w_dcache_data;
+            wire  [W_ADDR-1:0] w_dcache_dram_address;
+            wire               w_dcache_dram_request;
+            wire               w_dcache_invalidate_done;
 
             // assign w_instance_insn_data = ;
             // assign w_instance_data_data = ;
@@ -126,22 +166,22 @@ module m_RVCorePL_wrapper #(
             ) icache_inst (
                 .CLK(CLK),
                 .RST_X(RST_X),
-                .w_pc(),
-                .w_inst_request(),
-                .w_dram_data(),
-                .w_dram_response(),
-                .w_is_paddr(),
-                .w_tlb_hit(),
-                .w_page_walk_fail(),
-                .w_tlb_address(),
-                .w_invalidate_request(),
-                .w_invalidate_address(),
-                .w_flush(),
-                .w_hit(),
-                .w_inst(),
-                .w_dram_address(),
-                .w_dram_request(),
-                .w_invalidate_done()
+                .w_pc(w_icache_pc),
+                .w_inst_request(w_icache_inst_request),
+                .w_dram_data(w_icache_dram_data),
+                .w_dram_response(w_icache_dram_response),
+                .w_is_paddr(w_icache_is_paddr),
+                .w_tlb_hit(w_icache_tlb_hit),
+                .w_page_walk_fail(w_icache_page_walk_fail),
+                .w_tlb_address(w_icache_tlb_address),
+                .w_invalidate_request(w_icache_invalidate_request),
+                .w_invalidate_address(w_icache_invalidate_address),
+                .w_flush(w_icache_flush),
+                .w_hit(w_icache_hit),
+                .w_inst(w_icache_inst),
+                .w_dram_address(w_icache_dram_address),
+                .w_dram_request(w_icache_dram_request),
+                .w_invalidate_done(w_icache_invalidate_done)
             );
 
             m_data_cache_dmap #(
@@ -149,25 +189,25 @@ module m_RVCorePL_wrapper #(
             ) dcache_inst (
                 .CLK(CLK),
                 .RST_X(RST_X),
-                .w_data_addr(),
-                .w_data_request(),
-                .w_data_rw(),
-                .w_store_data(),
-                .w_funct3(),
-                .w_dram_data(),
-                .w_dram_response(),
-                .w_is_paddr(),
-                .w_tlb_hit(),
-                .w_page_walk_fail(),
-                .w_tlb_address(),
-                .w_invalidate_request(),
-                .w_invalidate_address(),
-                .w_flush(),
-                .w_hit(),
-                .w_data(),
-                .w_dram_address(),
-                .w_dram_request(),
-                .w_invalidate_done()
+                .w_data_addr(w_dcache_data_addr),
+                .w_data_request(w_dcache_data_request),
+                .w_data_rw(w_dcache_data_rw),
+                .w_store_data(w_dcache_store_data),
+                .w_funct3(w_dcache_funct3),
+                .w_dram_data(w_dcache_dram_data),
+                .w_dram_response(w_dcache_dram_response),
+                .w_is_paddr(w_dcache_is_paddr),
+                .w_tlb_hit(w_dcache_tlb_hit),
+                .w_page_walk_fail(w_dcache_page_walk_fail),
+                .w_tlb_address(w_dcache_tlb_address),
+                .w_invalidate_request(w_dcache_invalidate_request),
+                .w_invalidate_address(w_dcache_invalidate_address),
+                .w_flush(w_dcache_flush),
+                .w_hit(w_dcache_hit),
+                .w_data(w_dcache_data),
+                .w_dram_address(w_dcache_dram_address),
+                .w_dram_request(w_dcache_dram_request),
+                .w_invalidate_done(w_dcache_invalidate_done)
             )
         end else begin
             assign w_instance_insn_data = w_insn_data;
@@ -274,8 +314,8 @@ module m_RVCorePL_wrapper #(
         .w_tlb_pte_addr(w_mmu_tlb_pte_addr),
         .w_tlb_acs(w_mmu_tlb_acs),
         .w_pw_done(w_mmu_pw_done),
-        .w_page_walk_fail(),
-        .w_tlb_inst_ok(),
-        .w_tlb_data_ok()
+        .w_page_walk_fail(w_mmu_page_walk_fail),
+        .w_tlb_inst_ok(w_mmu_tlb_inst_ok),
+        .w_tlb_data_ok(w_mmu_tlb_data_ok)
     );
 endmodule
