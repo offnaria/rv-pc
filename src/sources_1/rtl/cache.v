@@ -240,3 +240,138 @@ module m_inst_cache_dmap #(
     end
 
 endmodule
+
+module m_data_cache_dmap #(
+    parameter  W_DATA           = 128,
+    parameter  N_ENTRY          = 32,
+    localparam W_WORD           = 32,
+    localparam W_ADDR           = `XLEN
+) (
+    input  wire               CLK,
+    input  wire               RST_X,
+    input  wire  [W_ADDR-1:0] w_pc,
+    input  wire               w_data_request,
+    input  wire  [W_DATA-1:0] w_dram_data,
+    input  wire               w_dram_response,
+    input  wire               w_is_paddr,
+    input  wire               w_tlb_hit,
+    input  wire               w_page_walk_fail,
+    input  wire  [W_ADDR-1:0] w_tlb_address,
+    input  wire               w_invalidate_request,
+    input  wire        [31:0] w_invalidate_address,
+    input  wire               w_flush,
+
+    output wire               w_hit,
+    output wire  [W_DATA-1:0] w_data,
+    output wire  [W_ADDR-1:0] w_dram_address,
+    output wire               w_dram_request,
+    output wire               w_invalidate_done
+);
+    localparam N_WORDS = W_DATA / W_WORD; // The number of words in a cache line.
+    localparam W_INDEX = $clog2(N_ENTRY);
+    localparam W_OFFSET = $clog2(W_DATA/8);
+    localparam W_TAG = W_ADDR - (W_OFFSET + W_INDEX);
+    localparam N_STATES = 3;
+    localparam W_STATE = $clog2(N_STATES);
+
+    localparam S_INIT = 0;
+    localparam S_WAIT_TLB = 1;
+    localparam S_WAIT_DRAM = 2;
+
+    reg [W_STATE-1:0] r_state = S_INIT;
+    reg [W_STATE-1:0] w_next_state;
+
+    reg [N_ENTRY-1:0] r_valid = 0;
+    reg [W_TAG-1:0] r_tag [0:N_ENTRY-1];
+    reg [W_DATA-1:0] r_data [0:N_ENTRY-1];
+
+    integer i;
+    initial for (i = 0; i < N_ENTRY; i = i + 1) begin
+        r_tag[i] = 0;
+        r_data[i] = 0;
+    end
+
+    wire [W_INDEX-1:0] w_index = w_pc[W_OFFSET +: W_INDEX];
+    initial if (W_OFFSET + W_INDEX > 12) $fatal("Cache size must not exceed 4KB for now.");
+
+    wire [W_TAG-1:0] w_tag = w_pc[(W_OFFSET + W_INDEX) +: W_TAG];
+    wire [W_TAG-1:0] w_tlb_tag = w_tlb_address[(W_OFFSET + W_INDEX) +: W_TAG];
+    wire w_tag_match = (r_tag[w_index] == w_tag);
+    wire w_tlb_tag_match = (r_tag[w_index] == w_tlb_tag);
+    reg w_hit_t;
+    reg [W_DATA-1:0] w_data_t;
+    assign w_hit = w_hit_t;
+    assign w_data = w_data_t;
+
+    wire [W_INDEX-1:0] w_invalidate_index = w_invalidate_address[W_OFFSET +: W_INDEX];
+    wire [W_TAG-1:0] w_invalidate_tag = w_invalidate_address[(W_OFFSET + W_INDEX) +: W_TAG];
+    wire w_invalidate_tag_match = (r_tag[w_invalidate_index] == w_invalidate_tag);
+    assign w_invalidate_done = w_invalidate_request; // Assume that the invalidation is done immediately.
+
+    always @(posedge CLK) begin
+        if (!RST_X || w_flush) begin
+            r_valid <= 0;
+            r_state <= S_INIT;
+        end else begin
+            r_state <= w_next_state;
+            // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
+            if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
+                r_valid[w_index] <= 1;
+                r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
+                r_data[w_index] <= w_dram_data;
+            end else if (w_invalidate_request && w_invalidate_tag_match) begin // We don't need to check the valid bit here.
+                r_valid[w_invalidate_index] <= 1'b0;
+            end
+        end
+    end
+
+    always @(*) begin
+        w_next_state = r_state;
+        w_hit_t = 0;
+        w_data_t = r_data[w_index];
+        case (r_state)
+            S_INIT: begin
+                if (w_data_request) begin
+                    // First, check the TLB. Then, check the cache.
+                    if (w_is_paddr) begin
+                        if (r_valid[w_index] && w_tag_match) begin
+                            w_hit_t = 1;
+                        end else begin
+                            w_next_state = S_WAIT_DRAM;
+                        end
+                    end else begin
+                        if (w_tlb_hit) begin
+                            if (r_valid[w_index] && w_tlb_tag_match) begin
+                                w_hit_t = 1;
+                            end else begin
+                                w_next_state = S_WAIT_DRAM;
+                            end
+                        end else begin
+                            w_next_state = S_WAIT_TLB;
+                        end
+                    end
+                end
+            end
+            S_WAIT_TLB: begin // TLB miss. Wait for the page walk.
+                if (w_tlb_hit) begin
+                    if (r_valid[w_index] && w_tlb_tag_match) begin
+                        w_hit_t = 1;
+                        w_next_state = S_INIT;
+                    end else begin
+                        w_next_state = S_WAIT_DRAM;
+                    end
+                end else if (w_page_walk_fail) begin // Page walk failed. Go back to the initial state.
+                    w_next_state = S_INIT;
+                end
+            end
+            S_WAIT_DRAM: begin // Cache miss. Request the data from DRAM.
+                if (w_dram_response) begin
+                    w_next_state = S_INIT;
+                    w_hit_t = 1;
+                    w_data_t = w_dram_data;
+                end
+            end
+        endcase
+    end
+
+endmodule
