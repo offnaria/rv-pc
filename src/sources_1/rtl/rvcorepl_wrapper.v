@@ -100,6 +100,12 @@ module m_RVCorePL_wrapper #(
 
             reg [W_OCCUPATION-1:0] r_mmu_occupation = S_OCCUPATION_IDLE;
 
+            localparam W_DATA = 128;
+            localparam N_ICACHE_ENTRY = 32;
+            localparam N_DCACHE_ENTRY = 32;
+            localparam W_WORD = 32;
+            localparam W_ADDR = `XLEN;
+
             wire  [W_ADDR-1:0] w_icache_pc;
             wire               w_icache_inst_request;
             wire  [W_DATA-1:0] w_icache_dram_data;
@@ -162,7 +168,8 @@ module m_RVCorePL_wrapper #(
             // assign w_mmu_tlb_request = ;
 
             m_inst_cache_dmap #(
-                .N_ENTRY(32)
+                .W_DATA(W_DATA),
+                .N_ENTRY(N_ICACHE_ENTRY)
             ) icache_inst (
                 .CLK(CLK),
                 .RST_X(RST_X),
@@ -185,7 +192,8 @@ module m_RVCorePL_wrapper #(
             );
 
             m_data_cache_dmap #(
-                .N_ENTRY(32)
+                .W_DATA(W_DATA),
+                .N_ENTRY(N_DCACHE_ENTRY)
             ) dcache_inst (
                 .CLK(CLK),
                 .RST_X(RST_X),
@@ -208,7 +216,7 @@ module m_RVCorePL_wrapper #(
                 .w_dram_address(w_dcache_dram_address),
                 .w_dram_request(w_dcache_dram_request),
                 .w_invalidate_done(w_dcache_invalidate_done)
-            )
+            );
         end else begin
             assign w_instance_insn_data = w_insn_data;
             assign w_instance_data_data = w_data_data;
