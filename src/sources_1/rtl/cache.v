@@ -249,8 +249,11 @@ module m_data_cache_dmap #(
 ) (
     input  wire               CLK,
     input  wire               RST_X,
-    input  wire  [W_ADDR-1:0] w_pc,
+    input  wire  [W_ADDR-1:0] w_data_addr,
     input  wire               w_data_request,
+    input  wire               w_data_rw, // 0: read, 1: write
+    input  wire  [W_WORD-1:0] w_store_data,
+    input  wire         [2:0] w_funct3, // 0: byte, 1: half, 2: word
     input  wire  [W_DATA-1:0] w_dram_data,
     input  wire               w_dram_response,
     input  wire               w_is_paddr,
@@ -291,10 +294,10 @@ module m_data_cache_dmap #(
         r_data[i] = 0;
     end
 
-    wire [W_INDEX-1:0] w_index = w_pc[W_OFFSET +: W_INDEX];
+    wire [W_INDEX-1:0] w_index = w_data_addr[W_OFFSET +: W_INDEX];
     initial if (W_OFFSET + W_INDEX > 12) $fatal("Cache size must not exceed 4KB for now.");
 
-    wire [W_TAG-1:0] w_tag = w_pc[(W_OFFSET + W_INDEX) +: W_TAG];
+    wire [W_TAG-1:0] w_tag = w_data_addr[(W_OFFSET + W_INDEX) +: W_TAG];
     wire [W_TAG-1:0] w_tlb_tag = w_tlb_address[(W_OFFSET + W_INDEX) +: W_TAG];
     wire w_tag_match = (r_tag[w_index] == w_tag);
     wire w_tlb_tag_match = (r_tag[w_index] == w_tlb_tag);
@@ -308,6 +311,11 @@ module m_data_cache_dmap #(
     wire w_invalidate_tag_match = (r_tag[w_invalidate_index] == w_invalidate_tag);
     assign w_invalidate_done = w_invalidate_request; // Assume that the invalidation is done immediately.
 
+    wire [W_WORD-1:0] w_store_mask_word = (w_funct3[1]) ? 32'hffffffff : (w_funct3[0]) ? 32'h0000ffff : 32'h000000ff;
+    wire [W_DATA-1:0] w_store_mask_line = {96'd0, w_store_mask_word} << {w_data_addr[3:0], 3'd0};
+    wire [W_DATA-1:0] w_store_data_prep = {96'd0, w_store_data} << {w_data_addr[3:0], 3'd0};
+    wire [W_DATA-1:0] w_store_data_line = (r_data[w_index] & ~w_store_mask_line) | (w_store_data_prep & w_store_mask_line);
+
     always @(posedge CLK) begin
         if (!RST_X || w_flush) begin
             r_valid <= 0;
@@ -315,16 +323,20 @@ module m_data_cache_dmap #(
         end else begin
             r_state <= w_next_state;
             // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
-            if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
+            if (!w_data_rw && (r_state == S_WAIT_DRAM) && w_dram_response) begin // Load from memory.
                 r_valid[w_index] <= 1;
                 r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
                 r_data[w_index] <= w_dram_data;
+            end else if (w_data_rw && w_hit) begin // Store update.
+                // In this case, r_valid and r_tag must have already been set.
+                r_data[w_index] <= w_store_data_line;
             end else if (w_invalidate_request && w_invalidate_tag_match) begin // We don't need to check the valid bit here.
                 r_valid[w_invalidate_index] <= 1'b0;
             end
         end
     end
 
+    // NOTE: This cache is non-write-allocate. Don't go to the WAIT_DRAM state for store.
     always @(*) begin
         w_next_state = r_state;
         w_hit_t = 0;
@@ -336,14 +348,14 @@ module m_data_cache_dmap #(
                     if (w_is_paddr) begin
                         if (r_valid[w_index] && w_tag_match) begin
                             w_hit_t = 1;
-                        end else begin
+                        end else if (!w_data_rw) begin
                             w_next_state = S_WAIT_DRAM;
                         end
                     end else begin
                         if (w_tlb_hit) begin
                             if (r_valid[w_index] && w_tlb_tag_match) begin
                                 w_hit_t = 1;
-                            end else begin
+                            end else if (!w_data_rw) begin
                                 w_next_state = S_WAIT_DRAM;
                             end
                         end else begin
@@ -357,8 +369,10 @@ module m_data_cache_dmap #(
                     if (r_valid[w_index] && w_tlb_tag_match) begin
                         w_hit_t = 1;
                         w_next_state = S_INIT;
-                    end else begin
+                    end else if (!w_data_rw) begin
                         w_next_state = S_WAIT_DRAM;
+                    end else begin // Don't go to WAIT_DRAM for store.
+                        w_next_state = S_INIT;
                     end
                 end else if (w_page_walk_fail) begin // Page walk failed. Go back to the initial state.
                     w_next_state = S_INIT;
