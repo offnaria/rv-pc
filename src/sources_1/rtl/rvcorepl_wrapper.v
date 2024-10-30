@@ -89,7 +89,86 @@ module m_RVCorePL_wrapper #(
 
     generate
         if (CACHED) begin
-            
+            localparam N_OCCUPATION_STATES = 3;
+            localparam W_OCCUPATION = $clog2(N_OCCUPATION_STATES);
+            localparam S_OCCUPATION_IDLE = 0;
+            localparam S_OCCUPATION_INST = 1;
+            localparam S_OCCUPATION_DATA = 2;
+
+            reg [W_OCCUPATION-1:0] r_mmu_occupation = S_OCCUPATION_IDLE;
+
+            // assign w_instance_insn_data = ;
+            // assign w_instance_data_data = ;
+            // assign w_instance_is_dram_data = ;
+            // assign w_instance_busy = ;
+            // assign w_instance_pagefault = ;
+            // assign w_instance_mc_mode = ;
+            // assign w_instance_mtip = ;
+            // assign w_instance_msip = ;
+            // assign w_instance_meip = ;
+            // assign w_instance_seip = ;
+            // assign w_instance_mtime = ;
+            // assign w_instance_cache_invalidate = ;
+            // assign w_instance_cache_invalidate_address = ;
+
+            // assign w_data_wdata = ;
+            // assign w_init_stage = ;
+            // assign w_data_we = ;
+            // assign w_dev_addr = ;
+            // assign w_dram_addr = ;
+            // assign w_data_ctrl = ;
+            // assign w_dram_re = ;
+            // assign w_mmu_tlb_req = ;
+            // assign w_mmu_tlb_request = ;
+
+            m_inst_cache_dmap #(
+                .N_ENTRY(32)
+            ) icache_inst (
+                .CLK(CLK),
+                .RST_X(RST_X),
+                .w_pc(),
+                .w_inst_request(),
+                .w_dram_data(),
+                .w_dram_response(),
+                .w_is_paddr(),
+                .w_tlb_hit(),
+                .w_page_walk_fail(),
+                .w_tlb_address(),
+                .w_invalidate_request(),
+                .w_invalidate_address(),
+                .w_flush(),
+                .w_hit(),
+                .w_inst(),
+                .w_dram_address(),
+                .w_dram_request(),
+                .w_invalidate_done()
+            );
+
+            m_data_cache_dmap #(
+                .N_ENTRY(32)
+            ) dcache_inst (
+                .CLK(CLK),
+                .RST_X(RST_X),
+                .w_data_addr(),
+                .w_data_request(),
+                .w_data_rw(),
+                .w_store_data(),
+                .w_funct3(),
+                .w_dram_data(),
+                .w_dram_response(),
+                .w_is_paddr(),
+                .w_tlb_hit(),
+                .w_page_walk_fail(),
+                .w_tlb_address(),
+                .w_invalidate_request(),
+                .w_invalidate_address(),
+                .w_flush(),
+                .w_hit(),
+                .w_data(),
+                .w_dram_address(),
+                .w_dram_request(),
+                .w_invalidate_done()
+            )
         end else begin
             assign w_instance_insn_data = w_insn_data;
             assign w_instance_data_data = w_data_data;
