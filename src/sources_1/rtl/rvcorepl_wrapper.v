@@ -37,8 +37,6 @@ module m_RVCorePL_wrapper #(
     wire         w_instance_meip;
     wire         w_instance_seip;
     wire [63:0]  w_instance_mtime;
-    wire         w_instance_cache_invalidate;
-    wire [31:0]  w_instance_cache_invalidate_address;
 
     wire [31:0]  w_instance_data_wdata;
     wire [31:0]  w_instance_insn_addr;
@@ -154,8 +152,6 @@ module m_RVCorePL_wrapper #(
             // assign w_instance_meip = ;
             // assign w_instance_seip = ;
             // assign w_instance_mtime = ;
-            // assign w_instance_cache_invalidate = ;
-            // assign w_instance_cache_invalidate_address = ;
 
             // assign w_data_wdata = ;
             // assign w_init_stage = ;
@@ -229,8 +225,6 @@ module m_RVCorePL_wrapper #(
             assign w_instance_meip = w_meip;
             assign w_instance_seip = w_seip;
             assign w_instance_mtime = w_mtime;
-            assign w_instance_cache_invalidate = w_cache_invalidate;
-            assign w_instance_cache_invalidate_address = w_cache_invalidate_address;
 
             assign w_data_wdata = (w_mmu_pw_running) ? w_mmu_pte_wdata : w_instance_data_wdata;
             assign w_init_stage = w_instance_init_stage;
@@ -269,8 +263,6 @@ module m_RVCorePL_wrapper #(
         .w_meip(w_instance_meip),
         .w_seip(w_instance_seip),
         .w_mtime(w_instance_mtime),
-        .w_cache_invalidate(w_instance_cache_invalidate),
-        .w_cache_invalidate_address(w_instance_cache_invalidate_address),
         .w_data_wdata(w_instance_data_wdata),
         .w_insn_addr(w_instance_insn_addr),
         .w_data_ctrl(w_instance_data_ctrl),

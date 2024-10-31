@@ -55,8 +55,6 @@ module m_RVCorePL_SMP#(
     input  wire         w_meip,         // Machine external interrupt signal from PLIC
     input  wire         w_seip,         // Supervisor external interrupt signal from PLIC
     input  wire [63:0]  w_mtime,        // Timer from CLINT
-    input  wire         w_cache_invalidate,
-    input  wire [31:0]  w_cache_invalidate_address,
 
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
