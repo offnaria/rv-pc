@@ -90,13 +90,16 @@ module m_RVCorePL_wrapper #(
 
     generate
         if (CACHED) begin
-            localparam N_OCCUPATION_STATES = 3;
-            localparam W_OCCUPATION = $clog2(N_OCCUPATION_STATES);
-            localparam S_OCCUPATION_IDLE = 0;
-            localparam S_OCCUPATION_INST = 1;
-            localparam S_OCCUPATION_DATA = 2;
-
-            reg [W_OCCUPATION-1:0] r_mmu_occupation = S_OCCUPATION_IDLE;
+            localparam  S_MEM_ACCESS_IDLE            = 0;
+            localparam  S_MEM_ACCESS_STORE           = 1;
+            localparam  S_MEM_ACCESS_LOAD            = 2;
+            localparam  S_MEM_ACCESS_INST_READ       = 3;
+            localparam  S_MEM_ACCESS_LOAD_USE_HAZARD = 4;
+            localparam  S_MEM_ACCESS_AMO_LOAD        = 5;
+            localparam  S_MEM_ACCESS_AMO_ALU         = 6;
+            localparam  S_MEM_ACCESS_AMO_STORE       = 7;
+            localparam  S_MEM_ACCESS_INTERRUPT       = 8;
+            wire [3:0] w_instance_mem_access_state = core_inst.mem_access_state;
 
             localparam W_DATA = 128;
             localparam N_ICACHE_ENTRY = 32;
