@@ -180,7 +180,7 @@ module m_inst_cache_dmap #(
         end else begin
             if (w_inst_request) r_state <= w_next_state;
             // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
-            if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
+            if ((r_state == S_WAIT_DRAM) && w_dram_response) begin // Assume that the data is always from DRAM.
                 r_valid[w_index] <= 1;
                 r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
                 r_data[w_index] <= w_dram_data;
@@ -261,6 +261,7 @@ module m_data_cache_dmap #(
     input  wire               w_invalidate_request,
     input  wire        [31:0] w_invalidate_address,
     input  wire               w_flush,
+    input  wire               w_data_from_dram,
 
     output wire               w_hit,
     output wire  [W_DATA-1:0] w_data,
@@ -321,7 +322,7 @@ module m_data_cache_dmap #(
         end else begin
             if (w_data_request) r_state <= w_next_state;
             // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
-            if (!w_data_rw && (r_state == S_WAIT_DRAM) && w_dram_response) begin // Load from memory.
+            if (!w_data_rw && (r_state == S_WAIT_DRAM) && w_dram_response && w_data_from_dram) begin // Load from DRAM.
                 r_valid[w_index] <= 1;
                 r_tag[w_index] <= (w_is_paddr) ? w_tag : w_tlb_tag;
                 r_data[w_index] <= w_dram_data;
