@@ -178,7 +178,7 @@ module m_inst_cache_dmap #(
             r_valid <= 0;
             r_state <= S_INIT;
         end else begin
-            r_state <= w_next_state;
+            if (w_inst_request) r_state <= w_next_state;
             // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
             if ((r_state == S_WAIT_DRAM) && w_dram_response) begin
                 r_valid[w_index] <= 1;
@@ -196,24 +196,22 @@ module m_inst_cache_dmap #(
         w_data_t = r_data[w_index];
         case (r_state)
             S_INIT: begin
-                if (w_inst_request) begin
-                    // First, check the TLB. Then, check the cache.
-                    if (w_is_paddr) begin
-                        if (r_valid[w_index] && w_tag_match) begin
+                // First, check the TLB. Then, check the cache.
+                if (w_is_paddr) begin
+                    if (r_valid[w_index] && w_tag_match) begin
+                        w_hit_t = 1;
+                    end else begin
+                        w_next_state = S_WAIT_DRAM;
+                    end
+                end else begin
+                    if (w_tlb_hit) begin
+                        if (r_valid[w_index] && w_tlb_tag_match) begin
                             w_hit_t = 1;
                         end else begin
                             w_next_state = S_WAIT_DRAM;
                         end
                     end else begin
-                        if (w_tlb_hit) begin
-                            if (r_valid[w_index] && w_tlb_tag_match) begin
-                                w_hit_t = 1;
-                            end else begin
-                                w_next_state = S_WAIT_DRAM;
-                            end
-                        end else begin
-                            w_next_state = S_WAIT_TLB;
-                        end
+                        w_next_state = S_WAIT_TLB;
                     end
                 end
             end
@@ -321,7 +319,7 @@ module m_data_cache_dmap #(
             r_valid <= 0;
             r_state <= S_INIT;
         end else begin
-            r_state <= w_next_state;
+            if (w_data_request) r_state <= w_next_state;
             // Assume that the invalidate request won't be asserted at the same time as the load of this HART compleates.
             if (!w_data_rw && (r_state == S_WAIT_DRAM) && w_dram_response) begin // Load from memory.
                 r_valid[w_index] <= 1;
@@ -343,24 +341,22 @@ module m_data_cache_dmap #(
         w_data_t = r_data[w_index];
         case (r_state)
             S_INIT: begin
-                if (w_data_request) begin
-                    // First, check the TLB. Then, check the cache.
-                    if (w_is_paddr) begin
-                        if (r_valid[w_index] && w_tag_match) begin
+                // First, check the TLB. Then, check the cache.
+                if (w_is_paddr) begin
+                    if (r_valid[w_index] && w_tag_match) begin
+                        w_hit_t = 1;
+                    end else if (!w_data_rw) begin
+                        w_next_state = S_WAIT_DRAM;
+                    end
+                end else begin
+                    if (w_tlb_hit) begin
+                        if (r_valid[w_index] && w_tlb_tag_match) begin
                             w_hit_t = 1;
                         end else if (!w_data_rw) begin
                             w_next_state = S_WAIT_DRAM;
                         end
                     end else begin
-                        if (w_tlb_hit) begin
-                            if (r_valid[w_index] && w_tlb_tag_match) begin
-                                w_hit_t = 1;
-                            end else if (!w_data_rw) begin
-                                w_next_state = S_WAIT_DRAM;
-                            end
-                        end else begin
-                            w_next_state = S_WAIT_TLB;
-                        end
+                        w_next_state = S_WAIT_TLB;
                     end
                 end
             end
