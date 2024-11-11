@@ -117,7 +117,7 @@ module m_inst_cache_dmap #(
     input  wire  [W_ADDR-1:0] w_pc,
     input  wire               w_inst_request,
     input  wire  [W_DATA-1:0] w_dram_data,
-    input  wire               w_dram_response,
+    input  wire               w_dram_busy,
     input  wire               w_is_paddr,
     input  wire               w_tlb_hit,
     input  wire               w_page_walk_fail,
@@ -130,7 +130,8 @@ module m_inst_cache_dmap #(
     output wire  [W_DATA-1:0] w_inst,
     output wire  [W_ADDR-1:0] w_dram_address,
     output wire               w_dram_request,
-    output wire               w_invalidate_done
+    output wire               w_invalidate_done,
+    output wire               w_mmu_request
 );
     localparam N_WORDS = W_DATA / W_WORD; // The number of words in a cache line.
     localparam W_INDEX = $clog2(N_ENTRY);
@@ -156,6 +157,20 @@ module m_inst_cache_dmap #(
         r_data[i] = 0;
     end
 
+    reg r_dram_requested = 0;
+    wire w_dram_response = r_dram_requested && !w_dram_busy;
+    always @(posedge CLK) begin
+        if (!RST_X) begin
+            r_dram_requested <= 0;
+        end else begin
+            if (w_inst_request && (w_next_state == S_WAIT_DRAM) && !w_dram_busy) begin
+                r_dram_requested <= 1;
+            end else if (w_dram_response) begin
+                r_dram_requested <= 0;
+            end
+        end
+    end
+
     wire [W_INDEX-1:0] w_index = w_pc[W_OFFSET +: W_INDEX];
     initial if (W_OFFSET + W_INDEX > 12) $fatal("Cache size must not exceed 4KB for now.");
 
@@ -167,6 +182,7 @@ module m_inst_cache_dmap #(
     reg [W_DATA-1:0] w_data_t;
     assign w_hit = w_hit_t;
     assign w_inst = w_data_t;
+    assign w_mmu_request = w_inst_request && !w_is_paddr && !w_tlb_hit;
 
     wire [W_INDEX-1:0] w_invalidate_index = w_invalidate_address[W_OFFSET +: W_INDEX];
     wire [W_TAG-1:0] w_invalidate_tag = w_invalidate_address[(W_OFFSET + W_INDEX) +: W_TAG];
@@ -253,7 +269,7 @@ module m_data_cache_dmap #(
     input  wire  [W_WORD-1:0] w_store_data,
     input  wire         [2:0] w_funct3, // 0: byte, 1: half, 2: word
     input  wire  [W_DATA-1:0] w_dram_data,
-    input  wire               w_dram_response,
+    input  wire               w_dram_busy,
     input  wire               w_is_paddr,
     input  wire               w_tlb_hit,
     input  wire               w_page_walk_fail,
@@ -267,7 +283,8 @@ module m_data_cache_dmap #(
     output wire  [W_DATA-1:0] w_data,
     output wire  [W_ADDR-1:0] w_dram_address,
     output wire               w_dram_request,
-    output wire               w_invalidate_done
+    output wire               w_invalidate_done,
+    output wire               w_mmu_request
 );
     localparam N_WORDS = W_DATA / W_WORD; // The number of words in a cache line.
     localparam W_INDEX = $clog2(N_ENTRY);
@@ -293,6 +310,20 @@ module m_data_cache_dmap #(
         r_data[i] = 0;
     end
 
+    reg r_dram_requested = 0;
+    wire w_dram_response = r_dram_requested && !w_dram_busy;
+    always @(posedge CLK) begin
+        if (!RST_X) begin
+            r_dram_requested <= 0;
+        end else begin
+            if (w_data_request && (w_next_state == S_WAIT_DRAM) && !w_dram_busy) begin
+                r_dram_requested <= 1;
+            end else if (w_dram_response) begin
+                r_dram_requested <= 0;
+            end
+        end
+    end
+
     wire [W_INDEX-1:0] w_index = w_data_addr[W_OFFSET +: W_INDEX];
     initial if (W_OFFSET + W_INDEX > 12) $fatal("Cache size must not exceed 4KB for now.");
 
@@ -304,6 +335,7 @@ module m_data_cache_dmap #(
     reg [W_DATA-1:0] w_data_t;
     assign w_hit = w_hit_t;
     assign w_data = w_data_t;
+    assign w_mmu_request = w_data_request && !w_is_paddr && !w_tlb_hit;
 
     wire [W_INDEX-1:0] w_invalidate_index = w_invalidate_address[W_OFFSET +: W_INDEX];
     wire [W_TAG-1:0] w_invalidate_tag = w_invalidate_address[(W_OFFSET + W_INDEX) +: W_TAG];

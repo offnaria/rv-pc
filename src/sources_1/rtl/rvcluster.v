@@ -65,7 +65,7 @@ module m_RVCluster #(
             assign w_core_page_walk_fail[g] = core_wrapper.mmu_inst.page_walk_fail;
 
             m_RVCorePL_wrapper #(
-                .CACHED(0),
+                .CACHED(1),
                 .MHARTID(g)
             ) core_wrapper (
                 .CLK(CLK),

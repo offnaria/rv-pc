@@ -55,6 +55,8 @@ module m_RVCorePL_SMP#(
     input  wire         w_meip,         // Machine external interrupt signal from PLIC
     input  wire         w_seip,         // Supervisor external interrupt signal from PLIC
     input  wire [63:0]  w_mtime,        // Timer from CLINT
+    input  wire         w_inst_cache_hit,
+    input  wire         w_data_cache_hit,
 
     output wire [31:0]  w_data_wdata,   // from r_data_wdata
     output wire [31:0]  w_insn_addr,    // from r_insn_addr
@@ -66,7 +68,9 @@ module m_RVCorePL_SMP#(
     output wire         w_init_stage,   // from r_init_stage
     output wire  [1:0]  w_tlb_req,      // from r_tlb_req
     output wire         w_tlb_flush,    // from r_tlb_flush
-    output wire         w_is_amo_load        // Indicates if the access is an atomic memory operation
+    output wire         w_is_amo_load,  // Indicates if the access is an atomic memory operation
+    output wire         w_inst_cache_flush,
+    output wire         w_data_cache_flush
 );
 
     localparam ENABLE_ICACHE=0;
@@ -258,43 +262,43 @@ module m_RVCorePL_SMP#(
     reg  inst_cache_we;
     reg  fetch_from_cache;
     wire [127:0] w_inst_cache_odata;
-    wire w_inst_cache_hit;
-    wire w_inst_cache_flush = tlb_flush || w_mc_mode == `MC_MODE_DISK || IdEx_op_FENCEI;
-    wire [127:0] w_instruction128;
+    // wire w_inst_cache_hit;
+    assign w_inst_cache_flush = tlb_flush || w_mc_mode == `MC_MODE_DISK || IdEx_op_FENCEI;
+    wire [127:0] w_instruction128 = w_insn_data;
     wire [6:0] w_inst_offset = {pc[3:2], 5'b0};
 
     // always @(posedge CLK) begin
     //     if (w_cache_invalidate) $write("%016h %1d %08h\n", mtime, mhartid, w_cache_invalidate_address);
     // end
 
-    generate
-        if (ENABLE_ICACHE) begin
-            localparam W_ICACHE_DATA = 128;
-            localparam N_ICACHE_ENTRY = 32;
-            localparam W_ICACHE_INDEX = $clog2(N_ICACHE_ENTRY);
-            localparam ICACHE_BYTE_OFFSET = $clog2(W_ICACHE_DATA/8);
-            m_cache_dmap #(
-                .ADDR_WIDTH(28), // for 4-word blocks
-                .D_WIDTH(W_ICACHE_DATA),
-                .ENTRY(N_ICACHE_ENTRY)
-            ) inst_cache (
-                .CLK(CLK),
-                .RST_X(RST_X),
-                .w_flush(w_inst_cache_flush),
-                .w_we(inst_cache_we),
-                .w_waddr(pc[31:4]),
-                .w_raddr(pc[31:4]),
-                .w_idata(w_insn_data),
-                .w_odata(w_inst_cache_odata),
-                .w_oe(w_inst_cache_hit)
-            );
-            assign w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data);
-        end else begin
-            assign w_inst_cache_odata = 128'd0;
-            assign w_inst_cache_hit = 1'b0;
-            assign w_instruction128 = w_insn_data;
-        end
-    endgenerate
+    // generate
+    //     if (ENABLE_ICACHE) begin
+    //         localparam W_ICACHE_DATA = 128;
+    //         localparam N_ICACHE_ENTRY = 32;
+    //         localparam W_ICACHE_INDEX = $clog2(N_ICACHE_ENTRY);
+    //         localparam ICACHE_BYTE_OFFSET = $clog2(W_ICACHE_DATA/8);
+    //         m_cache_dmap #(
+    //             .ADDR_WIDTH(28), // for 4-word blocks
+    //             .D_WIDTH(W_ICACHE_DATA),
+    //             .ENTRY(N_ICACHE_ENTRY)
+    //         ) inst_cache (
+    //             .CLK(CLK),
+    //             .RST_X(RST_X),
+    //             .w_flush(w_inst_cache_flush),
+    //             .w_we(inst_cache_we),
+    //             .w_waddr(pc[31:4]),
+    //             .w_raddr(pc[31:4]),
+    //             .w_idata(w_insn_data),
+    //             .w_odata(w_inst_cache_odata),
+    //             .w_oe(w_inst_cache_hit)
+    //         );
+    //         assign w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data);
+    //     end else begin
+    //         assign w_inst_cache_odata = 128'd0;
+    //         assign w_inst_cache_hit = 1'b0;
+    //         assign w_instruction128 = w_insn_data;
+    //     end
+    // endgenerate
 
     wire [31:0]  w_instruction = w_instruction128 >> w_inst_offset;
 
@@ -619,8 +623,8 @@ module m_RVCorePL_SMP#(
     reg  replace_cach_entry;
     reg  load_from_cache;
     wire [127:0] w_data_cache_odata;
-    wire w_data_cache_hit;
-    wire w_data_cache_flush = tlb_flush | w_mc_mode == `MC_MODE_DISK;
+    // wire w_data_cache_hit;
+    assign w_data_cache_flush = tlb_flush | w_mc_mode == `MC_MODE_DISK;
     wire [31:0]  w_mask_width = (ExMem_funct3 == 0) ? {24'h0, 8'hff} :
                                 (ExMem_funct3 == 1) ? {16'h0, 16'hffff} :
                                 32'hffffffff;
@@ -629,32 +633,34 @@ module m_RVCorePL_SMP#(
                   (w_data_cache_odata & w_cach_wdata_mask) | (({96'h0, w_data_wdata} << {ExMem_mem_addr[3:0], 3'b0}) & ~w_cach_wdata_mask)
                   : w_data_data;
 
-    generate
-        if (ENABLE_DCACHE) begin
-            m_cache_dmap #(
-                .ADDR_WIDTH(28), // for 4-word blocks
-                .D_WIDTH(128),
-                .ENTRY(32)
-            ) data_cache (
-                .CLK(CLK),
-                .RST_X(RST_X),
-                .w_flush(w_data_cache_flush),
-                .w_we(data_cache_we),
-                .w_waddr(ExMem_mem_addr[31:4]),
-                .w_raddr(ExMem_mem_addr[31:4]),
-                .w_idata(w_data_cache_wdata),
-                .w_odata(w_data_cache_odata),
-                .w_oe(w_data_cache_hit)
-            );
-        end else begin
-            assign w_data_cache_odata = 128'd0;
-            assign w_data_cache_hit = 1'b0;
-        end
-    endgenerate
+    // generate
+    //     if (ENABLE_DCACHE) begin
+    //         m_cache_dmap #(
+    //             .ADDR_WIDTH(28), // for 4-word blocks
+    //             .D_WIDTH(128),
+    //             .ENTRY(32)
+    //         ) data_cache (
+    //             .CLK(CLK),
+    //             .RST_X(RST_X),
+    //             .w_flush(w_data_cache_flush),
+    //             .w_we(data_cache_we),
+    //             .w_waddr(ExMem_mem_addr[31:4]),
+    //             .w_raddr(ExMem_mem_addr[31:4]),
+    //             .w_idata(w_data_cache_wdata),
+    //             .w_odata(w_data_cache_odata),
+    //             .w_oe(w_data_cache_hit)
+    //         );
+    //     end else begin
+    //         assign w_data_cache_odata = 128'd0;
+    //         assign w_data_cache_hit = 1'b0;
+    //     end
+    // endgenerate
     
 
-    wire [127:0] w_odata_t1 = (load_from_cache ?  w_data_cache_odata : w_data_data) >> {ExMem_mem_addr[3:0], 3'b0};
-    wire [31:0] w_odata_t2 = (!load_from_cache & !w_is_dram_data) ? w_data_data[31:0] : w_odata_t1[31:0];
+    // wire [127:0] w_odata_t1 = (load_from_cache ?  w_data_cache_odata : w_data_data) >> {ExMem_mem_addr[3:0], 3'b0};
+    // wire [31:0] w_odata_t2 = (!load_from_cache & !w_is_dram_data) ? w_data_data[31:0] : w_odata_t1[31:0];
+    wire [127:0] w_odata_t1 = w_data_data >> {ExMem_mem_addr[3:0], 3'b0};
+    wire [31:0] w_odata_t2 = (w_is_dram_data) ? w_odata_t1[31:0] : w_data_data[31:0];
 
     wire [31:0] w_ld_lb = {{24{w_odata_t2[ 7]&(~ExMem_funct3[2])}}, w_odata_t2[ 7:0]};
     wire [31:0] w_ld_lh = {{16{w_odata_t2[15]&(~ExMem_funct3[2])}}, w_odata_t2[15:0]};

@@ -37,6 +37,8 @@ module m_RVCorePL_wrapper #(
     wire         w_instance_meip;
     wire         w_instance_seip;
     wire [63:0]  w_instance_mtime;
+    wire         w_instance_inst_cache_hit;
+    wire         w_instance_data_cache_hit;
 
     wire [31:0]  w_instance_data_wdata;
     wire [31:0]  w_instance_insn_addr;
@@ -49,6 +51,8 @@ module m_RVCorePL_wrapper #(
     wire  [1:0]  w_instance_tlb_req;
     wire         w_instance_tlb_flush;
     wire         w_instance_is_amo_load;
+    wire         w_instance_inst_cache_flush;
+    wire         w_instance_data_cache_flush;
 
     wire w_instance_is_paddr = (w_instance_priv == `PRIV_M) || (!w_instance_satp[31]);
     wire [31:0] w_instance_iaddr = (w_instance_is_paddr) ? w_instance_insn_addr : w_mmu_tlb_addr;
@@ -90,81 +94,76 @@ module m_RVCorePL_wrapper #(
 
     generate
         if (CACHED) begin
-            localparam  S_MEM_ACCESS_IDLE            = 0;
-            localparam  S_MEM_ACCESS_STORE           = 1;
-            localparam  S_MEM_ACCESS_LOAD            = 2;
-            localparam  S_MEM_ACCESS_INST_READ       = 3;
-            localparam  S_MEM_ACCESS_LOAD_USE_HAZARD = 4;
-            localparam  S_MEM_ACCESS_AMO_LOAD        = 5;
-            localparam  S_MEM_ACCESS_AMO_ALU         = 6;
-            localparam  S_MEM_ACCESS_AMO_STORE       = 7;
-            localparam  S_MEM_ACCESS_INTERRUPT       = 8;
-            wire [3:0] w_instance_mem_access_state = core_inst.mem_access_state;
-
             localparam W_DATA = 128;
             localparam N_ICACHE_ENTRY = 32;
             localparam N_DCACHE_ENTRY = 32;
             localparam W_WORD = 32;
             localparam W_ADDR = `XLEN;
 
-            wire  [W_ADDR-1:0] w_icache_pc;
-            wire               w_icache_inst_request;
-            wire  [W_DATA-1:0] w_icache_dram_data;
-            wire               w_icache_dram_response;
-            wire               w_icache_is_paddr;
-            wire               w_icache_tlb_hit;
-            wire               w_icache_page_walk_fail;
-            wire  [W_ADDR-1:0] w_icache_tlb_address;
-            wire               w_icache_invalidate_request;
-            wire        [31:0] w_icache_invalidate_address;
-            wire               w_icache_flush;
+            wire  [W_ADDR-1:0] w_icache_pc = w_instance_insn_addr;
+            wire               w_icache_inst_request = w_mmu_iscode;
+            wire  [W_DATA-1:0] w_icache_dram_data = w_insn_data;
+            wire               w_icache_dram_busy = w_interconnect_busy;
+            wire               w_icache_is_paddr = w_instance_is_paddr;
+            wire               w_icache_tlb_hit = w_mmu_tlb_inst_ok;
+            wire               w_icache_page_walk_fail = w_mmu_page_walk_fail;
+            wire  [W_ADDR-1:0] w_icache_tlb_address = {mmu_inst.w_tlb_inst_addr, w_icache_pc[11:0]};
+            wire               w_icache_invalidate_request = w_cache_invalidate;
+            wire        [31:0] w_icache_invalidate_address = w_cache_invalidate_address;
+            wire               w_icache_flush = w_instance_inst_cache_flush;
             wire               w_icache_hit;
             wire  [W_DATA-1:0] w_icache_inst;
             wire  [W_ADDR-1:0] w_icache_dram_address;
             wire               w_icache_dram_request;
             wire               w_icache_invalidate_done;
+            wire               w_icache_mmu_request;
 
-            wire  [W_ADDR-1:0] w_dcache_data_addr;
-            wire               w_dcache_data_request;
-            wire               w_dcache_data_rw;
-            wire  [W_WORD-1:0] w_dcache_store_data;
-            wire         [2:0] w_dcache_funct3;
-            wire  [W_DATA-1:0] w_dcache_dram_data;
-            wire               w_dcache_dram_response;
-            wire               w_dcache_is_paddr;
-            wire               w_dcache_tlb_hit;
-            wire               w_dcache_page_walk_fail;
-            wire  [W_ADDR-1:0] w_dcache_tlb_address;
-            wire               w_dcache_invalidate_request;
-            wire        [31:0] w_dcache_invalidate_address;
-            wire               w_dcache_flush;
+            wire  [W_ADDR-1:0] w_dcache_data_addr = w_instance_data_addr;
+            wire               w_dcache_data_request = w_mmu_iswrite || w_mmu_isread;
+            wire               w_dcache_data_rw = w_mmu_iswrite;
+            wire  [W_WORD-1:0] w_dcache_store_data = w_instance_data_wdata;
+            wire         [2:0] w_dcache_funct3 = core_inst.ExMem_funct3;
+            wire  [W_DATA-1:0] w_dcache_dram_data = w_data_data;
+            wire               w_dcache_dram_busy = w_interconnect_busy;
+            wire               w_dcache_is_paddr = w_instance_is_paddr;
+            wire               w_dcache_tlb_hit = w_mmu_tlb_data_ok;
+            wire               w_dcache_page_walk_fail = w_mmu_page_walk_fail;
+            wire  [W_ADDR-1:0] w_dcache_tlb_address = {mmu_inst.w_tlb_data_addr, w_dcache_data_addr[11:0]};
+            wire               w_dcache_invalidate_request = w_cache_invalidate;
+            wire        [31:0] w_dcache_invalidate_address = w_cache_invalidate_address;
+            wire               w_dcache_flush = w_instance_data_cache_flush;
+            wire               w_dcache_data_from_dram = w_is_dram_data;
             wire               w_dcache_hit;
             wire  [W_DATA-1:0] w_dcache_data;
             wire  [W_ADDR-1:0] w_dcache_dram_address;
             wire               w_dcache_dram_request;
             wire               w_dcache_invalidate_done;
+            wire               w_dcache_mmu_request;
 
-            // assign w_instance_insn_data = ;
-            // assign w_instance_data_data = ;
-            // assign w_instance_is_dram_data = ;
-            // assign w_instance_busy = ;
-            // assign w_instance_pagefault = ;
-            // assign w_instance_mc_mode = ;
-            // assign w_instance_mtip = ;
-            // assign w_instance_msip = ;
-            // assign w_instance_meip = ;
-            // assign w_instance_seip = ;
-            // assign w_instance_mtime = ;
+            assign w_instance_insn_data = w_icache_inst;
+            assign w_instance_data_data = w_dcache_data;
+            assign w_instance_is_dram_data = w_is_dram_data;
+            assign w_instance_busy = (w_interconnect_busy || w_mmu_tlb_busy);
+            assign w_instance_pagefault = w_mmu_pagefault;
+            assign w_instance_mc_mode = w_mc_mode;
+            assign w_instance_mtip = w_mtip;
+            assign w_instance_msip = w_msip;
+            assign w_instance_meip = w_meip;
+            assign w_instance_seip = w_seip;
+            assign w_instance_mtime = w_mtime;
+            assign w_instance_inst_cache_hit = w_icache_hit;
+            assign w_instance_data_cache_hit = w_dcache_hit;
 
-            // assign w_data_wdata = ;
-            // assign w_init_stage = ;
-            // assign w_data_we = ;
-            // assign w_dev_addr = ;
-            // assign w_dram_addr = ;
-            // assign w_data_ctrl = ;
-            // assign w_dram_re = ;
-            // assign w_mmu_tlb_req = ;
-            // assign w_mmu_tlb_request = ;
+            assign w_data_wdata = (w_mmu_pw_state == 5) ? w_mmu_pte_wdata : w_instance_data_wdata;
+            assign w_init_stage = w_instance_init_stage;
+            assign w_data_we = (w_mmu_pw_running) ? w_mmu_pte_we : w_mmu_iswrite;
+            assign w_dev_addr = (w_instance_is_paddr) ? w_instance_data_addr : w_mmu_tlb_addr;
+            assign w_dram_addr = (w_icache_mmu_request || w_dcache_mmu_request) ? w_mmu_tlb_pte_addr : (w_mmu_iscode) ? (w_instance_is_paddr) ? w_instance_insn_addr : w_mmu_tlb_addr : w_dev_addr;
+            assign w_data_ctrl = (w_mmu_iscode || w_dcache_mmu_request) ? `FUNCT3_LW____ : w_instance_data_ctrl;
+            assign w_dram_re = (w_icache_mmu_request || w_dcache_mmu_request) ? ((w_mmu_pw_state == 0) || (w_mmu_pw_state == 2)) : (w_mmu_iscode || w_mmu_isread);
+
+            assign w_mmu_tlb_req = w_instance_tlb_req;
+            assign w_mmu_tlb_request = (w_mmu_iscode) ? w_icache_mmu_request : w_dcache_mmu_request;
 
             m_inst_cache_dmap #(
                 .W_DATA(W_DATA),
@@ -175,7 +174,7 @@ module m_RVCorePL_wrapper #(
                 .w_pc(w_icache_pc),
                 .w_inst_request(w_icache_inst_request),
                 .w_dram_data(w_icache_dram_data),
-                .w_dram_response(w_icache_dram_response),
+                .w_dram_busy(w_icache_dram_busy),
                 .w_is_paddr(w_icache_is_paddr),
                 .w_tlb_hit(w_icache_tlb_hit),
                 .w_page_walk_fail(w_icache_page_walk_fail),
@@ -187,7 +186,8 @@ module m_RVCorePL_wrapper #(
                 .w_inst(w_icache_inst),
                 .w_dram_address(w_icache_dram_address),
                 .w_dram_request(w_icache_dram_request),
-                .w_invalidate_done(w_icache_invalidate_done)
+                .w_invalidate_done(w_icache_invalidate_done),
+                .w_mmu_request(w_icache_mmu_request)
             );
 
             m_data_cache_dmap #(
@@ -202,7 +202,7 @@ module m_RVCorePL_wrapper #(
                 .w_store_data(w_dcache_store_data),
                 .w_funct3(w_dcache_funct3),
                 .w_dram_data(w_dcache_dram_data),
-                .w_dram_response(w_dcache_dram_response),
+                .w_dram_busy(w_dcache_dram_busy),
                 .w_is_paddr(w_dcache_is_paddr),
                 .w_tlb_hit(w_dcache_tlb_hit),
                 .w_page_walk_fail(w_dcache_page_walk_fail),
@@ -210,11 +210,13 @@ module m_RVCorePL_wrapper #(
                 .w_invalidate_request(w_dcache_invalidate_request),
                 .w_invalidate_address(w_dcache_invalidate_address),
                 .w_flush(w_dcache_flush),
+                .w_data_from_dram(w_dcache_data_from_dram),
                 .w_hit(w_dcache_hit),
                 .w_data(w_dcache_data),
                 .w_dram_address(w_dcache_dram_address),
                 .w_dram_request(w_dcache_dram_request),
-                .w_invalidate_done(w_dcache_invalidate_done)
+                .w_invalidate_done(w_dcache_invalidate_done),
+                .w_mmu_request(w_dcache_mmu_request)
             );
         end else begin
             assign w_instance_insn_data = w_insn_data;
@@ -266,6 +268,8 @@ module m_RVCorePL_wrapper #(
         .w_meip(w_instance_meip),
         .w_seip(w_instance_seip),
         .w_mtime(w_instance_mtime),
+        .w_inst_cache_hit(w_instance_inst_cache_hit),
+        .w_data_cache_hit(w_instance_data_cache_hit),
         .w_data_wdata(w_instance_data_wdata),
         .w_insn_addr(w_instance_insn_addr),
         .w_data_ctrl(w_instance_data_ctrl),
@@ -276,7 +280,9 @@ module m_RVCorePL_wrapper #(
         .w_init_stage(w_instance_init_stage),
         .w_tlb_req(w_instance_tlb_req),
         .w_tlb_flush(w_instance_tlb_flush),
-        .w_is_amo_load(w_instance_is_amo_load)
+        .w_is_amo_load(w_instance_is_amo_load),
+        .w_inst_cache_flush(w_instance_inst_cache_flush),
+        .w_data_cache_flush(w_instance_data_cache_flush)
     );
 
     /***********************************        Local MMU       ***********************************/
@@ -287,6 +293,7 @@ module m_RVCorePL_wrapper #(
         end
     end
 
+    // NOTE: When w_pw_state == 7, requests to the interconnect are being asserted ().
     m_mmu mmu_inst (
         // Inputs
         .CLK(CLK),
