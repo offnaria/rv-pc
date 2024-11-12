@@ -80,8 +80,8 @@ module m_RVCluster #(
                 .w_meip(w_meip[g]),
                 .w_seip(w_seip[g]),
                 .w_mtime(w_mtime),
-                .w_cache_invalidate(), // TODO
-                .w_cache_invalidate_address(), // TODO
+                .w_cache_invalidate(w_cluster_data_we && (r_hart_sel != g) && w_cluster_dram_addr[31]), // TODO
+                .w_cache_invalidate_address(w_cluster_dram_addr), // TODO
                 .w_data_wdata(w_core_data_wdata[g]),
                 .w_init_stage(w_core_init_stage[g]),
                 .w_data_we(w_core_data_we[g]),

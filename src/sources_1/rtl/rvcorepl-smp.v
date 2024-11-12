@@ -71,8 +71,8 @@ module m_RVCorePL_SMP#(
     output wire         w_is_amo_load        // Indicates if the access is an atomic memory operation
 );
 
-    localparam ENABLE_ICACHE=0;
-    localparam ENABLE_DCACHE=0;
+    localparam ENABLE_ICACHE=1;
+    localparam ENABLE_DCACHE=1;
 
     localparam DEBUG_ICACHE = 0;
 
@@ -703,20 +703,42 @@ module m_RVCorePL_SMP#(
 
     generate
         if (ENABLE_DCACHE) begin
-            m_cache_dmap #(
-                .ADDR_WIDTH(28), // for 4-word blocks
-                .D_WIDTH(128),
-                .ENTRY(32)
+            localparam W_DCACHE_DATA = 128;
+            localparam N_DCACHE_ENTRY = 32;
+            localparam W_DCACHE_INDEX = $clog2(N_DCACHE_ENTRY);
+            localparam DCACHE_BYTE_OFFSET = $clog2(W_DCACHE_DATA/8);
+            // m_cache_dmap #(
+            //     .ADDR_WIDTH(28), // for 4-word blocks
+            //     .D_WIDTH(128),
+            //     .ENTRY(32)
+            // ) data_cache (
+            //     .CLK(CLK),
+            //     .RST_X(RST_X),
+            //     .w_flush(w_data_cache_flush),
+            //     .w_we(data_cache_we),
+            //     .w_waddr(ExMem_mem_addr[31:4]),
+            //     .w_raddr(ExMem_mem_addr[31:4]),
+            //     .w_idata(w_data_cache_wdata),
+            //     .w_odata(w_data_cache_odata),
+            //     .w_oe(w_data_cache_hit)
+            // );
+            m_cache_dmap_invalidatable #(
+                .VECTOR(1),
+                .W_ADDR(28),
+                .W_DATA(W_DCACHE_DATA),
+                .N_ENTRY(N_DCACHE_ENTRY)
             ) data_cache (
                 .CLK(CLK),
                 .RST_X(RST_X),
                 .w_flush(w_data_cache_flush),
                 .w_we(data_cache_we),
-                .w_waddr(ExMem_mem_addr[31:4]),
-                .w_raddr(ExMem_mem_addr[31:4]),
-                .w_idata(w_data_cache_wdata),
-                .w_odata(w_data_cache_odata),
-                .w_oe(w_data_cache_hit)
+                .w_waddr(ExMem_mem_addr[31:DCACHE_BYTE_OFFSET]),
+                .w_raddr(ExMem_mem_addr[31:DCACHE_BYTE_OFFSET]),
+                .w_wdata(w_data_cache_wdata),
+                .w_invalidate(w_cache_invalidate),
+                .w_invalidate_index(w_cache_invalidate_address[DCACHE_BYTE_OFFSET +: W_DCACHE_INDEX]),
+                .w_rdata(w_data_cache_odata),
+                .w_hit(w_data_cache_hit)
             );
         end else begin
             assign w_data_cache_odata = 128'd0;
