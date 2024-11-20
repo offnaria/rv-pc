@@ -21,6 +21,7 @@ constexpr bool TRACE = false;
 
 #define DRAM_SIM_CPP 0
 #define SDCARD_SIM_CPP 0
+#define ENABLE_FB 0
 
 static unsigned int cnt = 0;
 
@@ -152,8 +153,10 @@ int main(int argc, char *argv[]) {
 #   if SDCARD_SIM_CPP
         const std::unique_ptr<SDCardSim> sdcard = std::make_unique<SDCardSim>(argv[1]);
 #   endif
-    FrameBufferSim fb(640, 480);
-    fb.show();
+#   if ENABLE_FB
+        FrameBufferSim fb(640, 480);
+        fb.show();
+#   endif
 
     std::print("Simulation started\n");
 
@@ -176,18 +179,22 @@ int main(int argc, char *argv[]) {
 #       endif
         if (dut->w_led & (1 << 1)) { // Let's observe it after led[1] is set, i.e. initialization is done
             if constexpr (TRACE) tfp->dump(cnt);
-            fb.framebuffer_step(dut->CLK, dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
-            if (cnt % 6 == 0) {
-                fb.showFrameBuffer();
-                while (kit.events_pending()) kit.iteration();
-            }
+            if (cnt == 0) std::print("Memory initialization done\n"); 
+            if (cnt % 100'000'000 == 0) std::print("Simulation step {}\n", cnt);
+#           if ENABLE_FB
+                fb.framebuffer_step(dut->CLK, dut->w_vga_we, dut->w_vga_waddr, dut->w_vga_wdata);
+                if (cnt % 6 == 0) {
+                    fb.showFrameBuffer();
+                    while (kit.events_pending()) kit.iteration();
+                }
+#           endif
             ++cnt;
         }
-        if (cnt == 1) std::print("Memory initialization done\n"); 
         if (cnt >= TIMEOUT) {
             std::print("Simulation timed out\n");
             break;
         }
+
         dut->eval();
     }
     std::print("Simulation finished. cnt={}\n", cnt);
