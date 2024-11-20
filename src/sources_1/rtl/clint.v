@@ -31,6 +31,8 @@ module clint #(
                +------------------------+
 */
 
+    localparam N_WAITCOUNT = 25-1; // Assume 75MHz clock and the timer is 3MHz
+
     reg [31:0] r_msip     [0:N_HARTS-1];
     reg [63:0] r_mtimecmp [0:N_HARTS-1];
     integer i;
@@ -42,6 +44,16 @@ module clint #(
     end
     reg [63:0] r_mtime = 64'd0;
     assign w_mtime = r_mtime;
+
+    reg [31:0] r_next_time_helper = 0;
+    always @(posedge CLK) begin
+        if (!RST_X) begin
+            r_next_time_helper <= 0;
+        end else begin
+            r_next_time_helper <= (r_next_time_helper < N_WAITCOUNT) ? r_next_time_helper + 1 : 0;
+        end
+    end
+    wire [63:0] w_next_time = (r_next_time_helper < N_WAITCOUNT) ? r_mtime : r_mtime + 64'd1;
 
     always @(posedge CLK) begin
         if (!RST_X) begin
@@ -56,14 +68,17 @@ module clint #(
                     r_mtime[31:0] <= w_wdata;
                 end else if (w_offset==16'hBFFC) begin
                     r_mtime[63:32] <= w_wdata;
+                end else begin
+                    r_mtime <= w_next_time;
                 end
                 for (i = 0; i < N_HARTS; i = i + 1) begin
                     if (w_offset==4*i) r_msip[i][0] <= w_wdata[0];
                     if (w_offset==16'h4000+8*i) r_mtimecmp[i][31:0] <= w_wdata;
                     if (w_offset==16'h4004+8*i) r_mtimecmp[i][63:32] <= w_wdata;
                 end
+            end else begin
+                r_mtime <= w_next_time;
             end
-            r_mtime <= r_mtime + 64'd1;
         end
     end
 

@@ -9,7 +9,7 @@
 	cpus {
 		#address-cells = <0x1>;
 		#size-cells = <0x0>;
-		timebase-frequency = <0x47868c0>;
+		timebase-frequency = <3000000>;
 
 		cpu0: cpu@0 {
 			device_type = "cpu";
@@ -18,7 +18,7 @@
 			compatible = "riscv";
 			riscv,isa = "rv32ima";
 			mmu-type = "riscv,sv32";
-			clock-frequency = <0x47868c0>;
+			clock-frequency = <75000000>;
 
 			cpu0_intc: interrupt-controller {
 				#interrupt-cells = <0x1>;
@@ -35,7 +35,7 @@
 			compatible = "riscv";
 			riscv,isa = "rv32ima";
 			mmu-type = "riscv,sv32";
-			clock-frequency = <0x47868c0>;
+			clock-frequency = <75000000>;
 
 			cpu1_intc: interrupt-controller {
 				#interrupt-cells = <0x1>;
