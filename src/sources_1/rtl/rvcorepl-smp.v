@@ -909,6 +909,7 @@ module m_RVCorePL_SMP#(
         end else if (tkn) begin
             pc <= jmp_pc;
             case (jmp_pc)
+                    32'hc001f610: $write("HARTID:%01d run_init_process\n", mhartid);
                     32'hc001f66c: $write("HARTID:%01d try_to_run_init_process\n", mhartid);
                     default: ;
                 endcase
@@ -1055,12 +1056,14 @@ module m_RVCorePL_SMP#(
                     `FUNCT12_SRET__ : begin
                         mstatus <= (((mstatus & ~(1<<`PRIV_S)) | (mstatus[5] << `PRIV_S)) | 32'h20) & ~32'h100;
                         priv    <= mstatus[8];
+                        if (mstatus[8] == `PRIV_U) $write("HART%1d: SRET to U-mode at %08x\n", mhartid, MemWb_pc);
                     end
                     `FUNCT12_MRET__ : begin
                         mstatus <= (((mstatus & ~(1 << `PRIV_M))
                                      | (mstatus[`MSTATUS_MPIE_SHIFT] << `PRIV_M))
                                     | `MSTATUS_MPIE) & ~`MSTATUS_MPP;
                         priv    <= mstatus[`MSTATUS_MPP_SHIFT+1:`MSTATUS_MPP_SHIFT];
+                        if (mstatus[`MSTATUS_MPP_SHIFT+1:`MSTATUS_MPP_SHIFT] == `PRIV_U) $write("HART%1d: MRET to U-mode at %08x\n", mhartid, MemWb_pc);
                     end
                 endcase
             end
