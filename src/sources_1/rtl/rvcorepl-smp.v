@@ -900,12 +900,18 @@ module m_RVCorePL_SMP#(
             pc <= `D_START_PC;
         end else if (w_take_interrupt) begin
             pc <= (w_deleg) ? stvec : mtvec;
+            $write ("HARTID:%01d Interrupt from pc=%08x to %08x (%08x)\n", mhartid, pc, (w_deleg) ? stvec : mtvec, irq_num);
         end else if (w_take_exception) begin
             pc <= (w_deleg) ? stvec : mtvec;
+            if (MemWb_pending_exception != 9) $write("HARTID:%01d Exception from pc=%08x to %08x by MemWb_pc=%08x (%08x)\n", mhartid, pc, (w_deleg) ? stvec : mtvec, MemWb_pc, MemWb_pending_exception);
         end else if (w_csr_flush) begin
             pc <= MemWb_jmp_pc;
         end else if (tkn) begin
             pc <= jmp_pc;
+            case (jmp_pc)
+                    32'hc001f66c: $write("HARTID:%01d try_to_run_init_process\n", mhartid);
+                    default: ;
+                endcase
         end else if (!IfId_stall) begin
             pc <= pc + 4;
         end
