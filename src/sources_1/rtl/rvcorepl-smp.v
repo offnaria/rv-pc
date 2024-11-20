@@ -275,39 +275,39 @@ module m_RVCorePL_SMP#(
             localparam N_ICACHE_ENTRY = 32;
             localparam W_ICACHE_INDEX = $clog2(N_ICACHE_ENTRY);
             localparam ICACHE_BYTE_OFFSET = $clog2(W_ICACHE_DATA/8);
-            // m_cache_dmap #(
-            //     .ADDR_WIDTH(28), // for 4-word blocks
-            //     .D_WIDTH(W_ICACHE_DATA),
-            //     .ENTRY(N_ICACHE_ENTRY)
-            // ) inst_cache (
-            //     .CLK(CLK),
-            //     .RST_X(RST_X),
-            //     .w_flush(w_inst_cache_flush),
-            //     .w_we(inst_cache_we),
-            //     .w_waddr(pc[31:4]),
-            //     .w_raddr(pc[31:4]),
-            //     .w_idata(w_insn_data),
-            //     .w_odata(w_inst_cache_odata),
-            //     .w_oe(w_inst_cache_hit)
-            // );
-            m_cache_dmap_invalidatable #(
-                .VECTOR(1),
-                .W_ADDR(28),
-                .W_DATA(W_ICACHE_DATA),
-                .N_ENTRY(N_ICACHE_ENTRY)
+            m_cache_dmap #(
+                .ADDR_WIDTH(28), // for 4-word blocks
+                .D_WIDTH(W_ICACHE_DATA),
+                .ENTRY(N_ICACHE_ENTRY)
             ) inst_cache (
                 .CLK(CLK),
                 .RST_X(RST_X),
                 .w_flush(w_inst_cache_flush),
                 .w_we(inst_cache_we),
-                .w_waddr(pc[31:ICACHE_BYTE_OFFSET]),
-                .w_raddr(pc[31:ICACHE_BYTE_OFFSET]),
-                .w_wdata(w_insn_data),
-                .w_invalidate(w_cache_invalidate),
-                .w_invalidate_index(w_cache_invalidate_address[ICACHE_BYTE_OFFSET +: W_ICACHE_INDEX]),
-                .w_rdata(w_inst_cache_odata),
-                .w_hit(w_inst_cache_hit)
+                .w_waddr(pc[31:4]),
+                .w_raddr(pc[31:4]),
+                .w_idata(w_insn_data),
+                .w_odata(w_inst_cache_odata),
+                .w_oe(w_inst_cache_hit)
             );
+            // m_cache_dmap_invalidatable #(
+            //     .VECTOR(1),
+            //     .W_ADDR(28),
+            //     .W_DATA(W_ICACHE_DATA),
+            //     .N_ENTRY(N_ICACHE_ENTRY)
+            // ) inst_cache (
+            //     .CLK(CLK),
+            //     .RST_X(RST_X),
+            //     .w_flush(w_inst_cache_flush),
+            //     .w_we(inst_cache_we),
+            //     .w_waddr(pc[31:ICACHE_BYTE_OFFSET]),
+            //     .w_raddr(pc[31:ICACHE_BYTE_OFFSET]),
+            //     .w_wdata(w_insn_data),
+            //     .w_invalidate(w_cache_invalidate),
+            //     .w_invalidate_index(w_cache_invalidate_address[ICACHE_BYTE_OFFSET +: W_ICACHE_INDEX]),
+            //     .w_rdata(w_inst_cache_odata),
+            //     .w_hit(w_inst_cache_hit)
+            // );
             assign w_instruction128 = (fetch_from_cache? w_inst_cache_odata : w_insn_data);
         end else begin
             assign w_inst_cache_odata = 128'd0;
