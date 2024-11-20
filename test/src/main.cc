@@ -5,6 +5,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <gtkmm.h>
+#include <iostream>
 
 #include <verilated_fst_c.h>
 
@@ -183,14 +184,16 @@ int main(int argc, char *argv[]) {
             ++cnt;
         }
         if (cnt == 1) std::print("Memory initialization done\n"); 
-        // if (cnt >= TIMEOUT) {
-        //     std::print("Simulation timed out\n");
-        //     break;
-        // }
+        if (cnt >= TIMEOUT) {
+            std::print("Simulation timed out\n");
+            break;
+        }
         dut->eval();
     }
     std::print("Simulation finished. cnt={}\n", cnt);
     dut->final();
     if constexpr (TRACE) tfp->close();
+    std::print("Press any key...\n");
+    std::cin.get();
     return 0;
 }
